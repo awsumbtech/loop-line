@@ -1,35 +1,26 @@
 # Loop Line
 
-An idle train game. A train circles a loop of track, gathers what grows beside
-it, and sells the load at the depot. Coins buy upgrades and new land. Each new
-land makes the loop longer, zooms the map out, and reaches richer ground.
+An idle train game set on islands. The island starts covered in trees, rocks
+and ore, with a tiny loop of track in the middle. The train's carts mine
+whatever sits beside the track. Clear every block along one side and that
+side of the track moves out a tile, reaching new blocks. Clear the whole
+island and sail to the next one, which is a little tougher and pays more.
 
 Play it: https://awsumbtech.github.io/loop-line/
 
-## Lands
+## How it plays
 
-The ground gets richer in rings around the depot.
+- **Blocks**: trees near the middle, then rocks, copper and gold toward the
+  coast. Tougher blocks pay more.
+- **Carts**: each cart hits every block it passes once per lap. Buy carts
+  with coins. Merge two carts of the same level into one of the next level,
+  which hits harder and frees a slot.
+- **Islands**: blocks on each new island are twice as tough and pay twice as
+  much. Carts and coins come with you.
+- **Speed**: tap the island to speed the train up for a moment.
 
-| Land | Price | New resource | Sells for |
-| --- | --- | --- | --- |
-| Home Woods | start | Wood | 2 |
-| Deep Woods | 150 | Hardwood | 4 |
-| The Quarry | 1,500 | Stone | 8 |
-| Iron Ridge | 12,000 | Iron | 16 |
-| Gold Hills | 100,000 | Gold | 32 |
-| Crystal Peak | 800,000 | Crystal | 64 |
-
-## Upgrades
-
-| Upgrade | What it does |
-| --- | --- |
-| Engine | Shorter lap time |
-| Wagon | Holds more |
-| Tools | More from each tree or rock |
-| Growth | Trees and rocks come back faster |
-
-Tap the map to stoke the engine for a short speed boost. The game saves in
-the browser and keeps earning for up to an hour while it is closed.
+The game saves in the browser and keeps working for up to an hour while it
+is closed. It can be installed to a phone's home screen.
 
 ## Run and test
 
@@ -44,7 +35,6 @@ The tests run the game rules (the part of `index.html` between the
 
 ## Roadmap
 
-1. Wagon order: more wagons, and neighbouring wagons buff each other
-2. A bigger offline allowance and more lands
-3. Refining wagons and town contracts
-4. Prestige: reach the end of the line and start a new one
+- Upgrades: engine speed and more
+- TNT and other boosts
+- More kinds of islands

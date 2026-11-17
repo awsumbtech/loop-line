@@ -17,8 +17,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
-  /* Layout: one phone-height column. Scoreboard on top, the map in the middle, the workshop below. */
-  /* One visual world (a forest map at dusk), so a single theme by choice. */
+  /* Layout: one phone-height column. Scoreboard on top, the island in the middle, the train yard below. */
+  /* One visual world (an island at sea), so a single theme by choice. */
   --panel: #1c2721;
   --panel-raised: #27352c;
   --line: #3b4d40;
@@ -26,9 +26,8 @@
   --muted: #a3b09d;
   --brass: #e2a52e;
   --signal: #c9452c;
-  --wood: #b5773c;
   --leaf: #7fa650;
-  --ground: #5d7a48;
+  --sea: #2f6f8f;
   --font-display: "Barlow Condensed", "Roboto Condensed", "Arial Narrow", sans-serif;
   --font-body: "Barlow", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   color-scheme: dark;
@@ -57,9 +56,7 @@ body {
 /* Scoreboard */
 .hud {
   padding: calc(10px + env(safe-area-inset-top)) 16px 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
+  display: flex; flex-direction: column; gap: 7px;
 }
 .hud-main { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .coins {
@@ -75,24 +72,23 @@ body {
 }
 .coins.bump #coins { animation: bump 240ms ease-out; }
 @keyframes bump { 0% { transform: translateY(0); } 40% { transform: translateY(-3px); } 100% { transform: translateY(0); } }
-.rate {
-  font-family: var(--font-display); font-weight: 600; font-size: 18px; color: var(--muted);
-  font-variant-numeric: tabular-nums; white-space: nowrap;
+.island-name {
+  font-family: var(--font-display); font-weight: 600; font-size: 20px; letter-spacing: 0.04em;
+  text-transform: uppercase; white-space: nowrap;
 }
-.rate b { color: var(--ink); font-weight: 600; }
-.cargo-label {
+.progress-label {
   display: flex; justify-content: space-between;
   font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums;
   margin-bottom: 4px;
 }
-.bar { height: 8px; border-radius: 4px; background: #131a16; overflow: hidden; display: flex; }
-.bar > div { height: 100%; width: 0; flex: none; }
+.bar { height: 8px; border-radius: 4px; background: #131a16; overflow: hidden; }
+#clearFill { height: 100%; width: 0; background: var(--leaf); border-radius: 4px; transition: width 300ms ease-out; }
 .tip { margin: 0; font-size: 13px; line-height: 1.3; color: var(--muted); min-height: 1.3em; }
 
-/* Map */
+/* Island */
 .map {
   position: relative; flex: 1; min-height: 0;
-  background: var(--ground);
+  background: var(--sea);
   border-top: 1px solid #0f1512; border-bottom: 1px solid #0f1512;
   cursor: pointer;
 }
@@ -104,7 +100,7 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
   padding: 4px 9px; border-radius: 6px; pointer-events: none;
   font-variant-numeric: tabular-nums;
 }
-.hint { left: 50%; top: 66%; transform: translate(-50%, -50%); max-width: 46%; text-align: center; line-height: 1.2; }
+.hint { left: 50%; top: auto; bottom: 10px; transform: translateX(-50%); white-space: nowrap; }
 .toast {
   position: absolute; left: 16px; right: 16px; top: 44px;
   background: rgba(20, 28, 24, 0.94); border: 1px solid var(--brass); border-radius: 10px;
@@ -113,58 +109,51 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
 .toast b { color: var(--brass); font-weight: 600; }
 [hidden] { display: none !important; }
 
-/* Workshop */
-.shop { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px 16px 6px; }
-.land, .up {
+/* Train yard */
+.yard { display: flex; flex-direction: column; gap: 8px; padding: 10px 16px 6px; }
+.train-row { display: flex; align-items: center; gap: 10px; }
+.train-label {
+  font-family: var(--font-display); font-weight: 600; font-size: 14px; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--muted); white-space: nowrap; min-width: 3.3em;
+}
+.slots { display: flex; gap: 5px; flex: 1; min-width: 0; }
+.slot {
+  flex: 1; min-width: 0; height: 34px; border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display); font-weight: 700; font-size: 17px; color: #1c2721;
+  font-variant-numeric: tabular-nums;
+}
+.slot.empty { border: 1.5px dashed var(--line); }
+.slot.pair { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--brass); }
+.slot.new { animation: pop 320ms ease-out; }
+@keyframes pop { 0% { transform: scale(0.6); } 70% { transform: scale(1.12); } 100% { transform: scale(1); } }
+.buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.act {
   position: relative; overflow: hidden;
+  display: flex; flex-direction: column; gap: 3px;
+  min-height: 70px; padding: 9px 10px 9px 14px;
   text-align: left; color: var(--ink); font: inherit;
-  border: 1px solid var(--line); border-radius: 10px;
+  background: var(--panel-raised); border: 1px solid var(--line); border-radius: 10px;
   cursor: pointer;
 }
-.land {
-  grid-column: 1 / -1;
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  min-height: 56px; padding: 8px 12px 8px 14px;
-  /* The darker fill creeps across as coins approach the price. */
-  background: linear-gradient(90deg, #3a4f37 0, #3a4f37 var(--p, 0%), var(--panel-raised) var(--p, 0%));
-}
-.land.ready { border-color: var(--brass); }
-.land-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.land-name { font-family: var(--font-display); font-weight: 700; font-size: 18px; letter-spacing: 0.04em; text-transform: uppercase; line-height: 1.05; }
-.land-blurb { font-size: 13px; color: var(--muted); line-height: 1.25; }
-.up {
-  display: flex; flex-direction: column; gap: 3px;
-  min-height: 76px; padding: 9px 10px 9px 14px;
-  background: var(--panel-raised);
-}
-.up::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--stripe); }
-.up[data-key="speed"] { --stripe: var(--signal); }
-.up[data-key="cargo"] { --stripe: var(--brass); }
-.up[data-key="power"] { --stripe: var(--wood); }
-.up[data-key="regrow"] { --stripe: var(--leaf); }
-.land:active, .up:active { transform: scale(0.98); }
-.land:focus-visible, .up:focus-visible, .reset:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
-.up-head { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; }
-.up-name { font-family: var(--font-display); font-weight: 700; font-size: 19px; letter-spacing: 0.04em; text-transform: uppercase; line-height: 1; }
-.up-lvl { font-family: var(--font-display); font-weight: 500; font-size: 14px; color: var(--muted); white-space: nowrap; }
-.up-stat { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; line-height: 1.25; }
-.up-stat b { color: var(--ink); font-weight: 500; }
-.up-cost {
-  display: flex; align-items: center; gap: 5px;
+.act::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--stripe); }
+#buy { --stripe: var(--brass); }
+#merge { --stripe: #3f86b8; }
+#sail { --stripe: var(--leaf); grid-column: 1 / -1; min-height: 56px; border-color: var(--leaf); }
+.act:active { transform: scale(0.98); }
+.act:focus-visible, .reset:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+.act-name { font-family: var(--font-display); font-weight: 700; font-size: 19px; letter-spacing: 0.04em; text-transform: uppercase; line-height: 1; }
+.act-stat { font-size: 13px; color: var(--muted); line-height: 1.25; font-variant-numeric: tabular-nums; }
+.act-stat b { color: var(--ink); font-weight: 500; }
+.act-cost {
+  margin-top: auto; display: flex; align-items: center; gap: 5px;
   font-family: var(--font-display); font-weight: 600; font-size: 18px; line-height: 1;
   font-variant-numeric: tabular-nums; color: var(--brass); white-space: nowrap;
 }
-.up .up-cost { margin-top: auto; }
+.act.ready { border-color: var(--brass); }
 [aria-disabled="true"] { cursor: default; }
-[aria-disabled="true"] .up-cost { color: var(--muted); }
+[aria-disabled="true"] .act-cost { color: var(--muted); }
 [aria-disabled="true"] .coin { filter: grayscale(1) brightness(0.8); }
-.up.limit { border-color: var(--brass); }
-.up .flag {
-  display: none;
-  font-family: var(--font-display); font-weight: 600; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase;
-  color: #1c2721; background: var(--brass); border-radius: 4px; padding: 1px 5px; margin-left: auto;
-}
-.up.limit .flag { display: inline-block; }
 
 .foot {
   display: flex; align-items: center; justify-content: space-between;
@@ -177,12 +166,11 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
 @media (max-height: 700px) {
   .coins { font-size: 32px; }
   .tip { display: none; }
-  .up { min-height: 66px; }
-  .land { min-height: 48px; }
+  .act { min-height: 60px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .coins.bump #coins { animation: none; }
-  .land:active, .up:active { transform: none; }
+  .coins.bump #coins, .slot.new { animation: none; }
+  .act:active { transform: none; }
 }
 </style>
 </head>
@@ -191,47 +179,47 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
   <header class="hud">
     <div class="hud-main">
       <div class="coins" id="coinsWrap" aria-label="Coins"><span class="coin"></span><span id="coins">0</span></div>
-      <div class="rate"><b id="rate">0</b> coins / min</div>
+      <div class="island-name" id="islandName">Island 1</div>
     </div>
     <div>
-      <div class="cargo-label"><span>Wagon load</span><span id="cargoText">0 / 10</span></div>
-      <div class="bar" id="cargoBar"></div>
+      <div class="progress-label"><span>Island cleared</span><span id="clearText">0%</span></div>
+      <div class="bar"><div id="clearFill"></div></div>
     </div>
     <p class="tip" id="tip"></p>
   </header>
 
   <div class="map" id="map">
-    <canvas id="c" aria-label="Map of the loop. The train gathers wood, stone and ore as it passes and sells them at the depot."></canvas>
+    <canvas id="c" aria-label="The island. The train's carts mine the trees, rocks and ore beside the track. Clearing a side makes the track grow."></canvas>
     <div class="chip" id="steam" hidden></div>
-    <div class="chip hint" id="hint" hidden>Tap the map to stoke the engine</div>
+    <div class="chip hint" id="hint" hidden>Tap the island to speed up the train</div>
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
   </div>
 
-  <section class="shop" aria-label="Upgrades">
-    <button class="land" type="button" id="land">
-      <span class="land-text"><span class="land-name" id="landName"></span><span class="land-blurb" id="landBlurb"></span></span>
-      <span class="up-cost" id="landCostWrap"><span class="coin"></span><span id="landCost"></span></span>
-    </button>
-    <button class="up" type="button" data-key="speed" id="up-speed">
-      <span class="up-head"><span class="up-name">Engine</span><span class="up-lvl"></span></span>
-      <span class="up-stat"></span><span class="up-cost"><span class="coin"></span><span class="cost-n"></span><span class="flag">Bottleneck</span></span>
-    </button>
-    <button class="up" type="button" data-key="cargo" id="up-cargo">
-      <span class="up-head"><span class="up-name">Wagon</span><span class="up-lvl"></span></span>
-      <span class="up-stat"></span><span class="up-cost"><span class="coin"></span><span class="cost-n"></span><span class="flag">Bottleneck</span></span>
-    </button>
-    <button class="up" type="button" data-key="power" id="up-power">
-      <span class="up-head"><span class="up-name">Tools</span><span class="up-lvl"></span></span>
-      <span class="up-stat"></span><span class="up-cost"><span class="coin"></span><span class="cost-n"></span><span class="flag">Bottleneck</span></span>
-    </button>
-    <button class="up" type="button" data-key="regrow" id="up-regrow">
-      <span class="up-head"><span class="up-name">Growth</span><span class="up-lvl"></span></span>
-      <span class="up-stat"></span><span class="up-cost"><span class="coin"></span><span class="cost-n"></span><span class="flag">Bottleneck</span></span>
-    </button>
+  <section class="yard" aria-label="Train yard">
+    <div class="train-row">
+      <span class="train-label">Carts</span>
+      <div class="slots" id="slots"></div>
+    </div>
+    <div class="buttons">
+      <button class="act" type="button" id="sail" hidden>
+        <span class="act-name" id="sailName">Sail to Island 2</span>
+        <span class="act-stat" id="sailStat">Your carts and coins come with you</span>
+      </button>
+      <button class="act" type="button" id="buy">
+        <span class="act-name">Buy cart</span>
+        <span class="act-stat" id="buyStat"></span>
+        <span class="act-cost"><span class="coin"></span><span id="buyCost"></span></span>
+      </button>
+      <button class="act" type="button" id="merge">
+        <span class="act-name">Merge</span>
+        <span class="act-stat" id="mergeStat"></span>
+        <span class="act-cost" id="mergeNote">Free</span>
+      </button>
+    </div>
   </section>
 
   <footer class="foot">
-    <span>Loop Line · v0.2.1</span>
+    <span>Loop Line · v0.3</span>
     <button class="reset" type="button" id="reset">Reset game</button>
   </footer>
 </main>
@@ -245,226 +233,233 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
 // drawing code, so it can be run and tested on its own (see test/logic.test.js).
 
 const CFG = {
-  baseSpeed: 50,         // track units per second (a 20 second lap on the first loop)
-  baseCargo: 10,         // units the wagon holds
-  basePower: 1,          // units from one fully grown tree or rock
-  baseRegrow: 10,        // seconds for a tree or rock to come back
-  minRegrow: 1.5,
-  minCut: 0.05,          // anything smaller than this is left alone
-  steamPerTap: 0.25,     // each tap adds this much boost
-  steamMax: 1,           // boost tops out at double speed
-  steamDecay: 0.5,       // boost lost per second
-  offlineCapSec: 3600,   // time away that still earns
-  rings: [310, 420, 530, 640, 750],   // distance from the depot where each richer ground begins
-  upgrades: {
-    speed:  { baseCost: 15, growth: 1.30 },
-    cargo:  { baseCost: 10, growth: 1.25 },
-    power:  { baseCost: 20, growth: 1.27 },
-    regrow: { baseCost: 30, growth: 1.32 },
-  },
+  W: 13, H: 17,          // island grid in tiles, including the sea around it
+  speed: 1.2,            // tiles per second
+  carLen: 0.9,           // track length each car takes up, in tiles
+  maxSlots: 8,
+  cartBaseCost: 10,
+  cartCostGrowth: 1.45,
+  islandGrowth: 2,       // each island's blocks are this much tougher and richer
+  steamPerTap: 0.25, steamMax: 1, steamDecay: 0.5,
+  offlineCapSec: 3600,
 };
-const KEYS = ['speed', 'cargo', 'power', 'regrow'];
 
-// What the train can gather, and what each unit sells for.
-// The ground gets richer in rings around the depot, in this order.
-const RES = {
-  wood:     { price: 2,  name: 'Wood' },
-  hardwood: { price: 4,  name: 'Hardwood' },
-  stone:    { price: 8,  name: 'Stone' },
-  iron:     { price: 16, name: 'Iron' },
-  gold:     { price: 32, name: 'Gold' },
-  crystal:  { price: 64, name: 'Crystal' },
+// What covers the island. Tougher blocks lie farther from the middle.
+const BLOCKS = {
+  tree:   { hp: 2,  value: 1,  name: 'Trees' },
+  rock:   { hp: 6,  value: 3,  name: 'Rocks' },
+  copper: { hp: 15, value: 8,  name: 'Copper' },
+  gold:   { hp: 35, value: 20, name: 'Gold' },
 };
-const RES_KEYS = ['wood', 'hardwood', 'stone', 'iron', 'gold', 'crystal'];
-
-// Each land is a bigger loop. "size" multiplies the first loop, "nodes" is how
-// many trees and rocks stand along it, "cost" is the price to extend there.
-const LANDS = [
-  { name: 'Home Woods',   size: 1.0, nodes: 12, cost: 0 },
-  { name: 'Deep Woods',   size: 1.4, nodes: 18, cost: 150 },
-  { name: 'The Quarry',   size: 1.8, nodes: 24, cost: 1500 },
-  { name: 'Iron Ridge',   size: 2.2, nodes: 30, cost: 12000 },
-  { name: 'Gold Hills',   size: 2.6, nodes: 36, cost: 100000 },
-  { name: 'Crystal Peak', size: 3.0, nodes: 44, cost: 800000 },
-];
-const BASE_LAP = 1000;                                        // length of the first loop
-const BASE_R = 140;                                           // radius of its curved ends
-const BASE_HALF = (BASE_LAP - 2 * Math.PI * BASE_R) / 4;      // half of one straight side
 
 const mod = (a, n) => ((a % n) + n) % n;
+const CX = (CFG.W - 1) / 2, CY = (CFG.H - 1) / 2;   // the station sits on this tile
+// How far the track may grow: one row of land stays outside it on every side.
+const LIMIT = { x0: 2, y0: 2, x1: CFG.W - 3, y1: CFG.H - 3 };
+const idx = (x, y) => y * CFG.W + x;
 
-// The loop is a stadium shape: two straights joined by two half circles.
-// The depot sits at (0, 0) in the middle of the west straight, and the loop
-// grows east, north and south from there. at(f) gives the point a fraction f
-// of the way round, the direction of travel and the direction facing outward.
-function loopAt(size) {
-  const r = BASE_R * size, half = BASE_HALF * size, straight = 2 * half;
-  const perim = BASE_LAP * size;
-  function at(f) {
-    let d = mod(f, 1) * perim;
-    let x, y, dx, dy;
-    if (d < half) { x = 0; y = -d; dx = 0; dy = -1; }
-    else if ((d -= half) < Math.PI * r) {
-      const a = Math.PI + d / r;
-      x = r + r * Math.cos(a); y = -half + r * Math.sin(a); dx = -Math.sin(a); dy = Math.cos(a);
+function rng(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const islandMult = n => Math.pow(CFG.islandGrowth, n - 1);
+const maxHpOf = (type, n) => (BLOCKS[type] ? BLOCKS[type].hp * islandMult(n) : 0);
+const valueOf = (type, n) => (BLOCKS[type] ? BLOCKS[type].value * islandMult(n) : 0);
+const startTrack = () => ({ x0: CX - 1, y0: CY - 1, x1: CX + 1, y1: CY + 1 });
+
+// Lay out island number n. The same number always gives the same island.
+function makeIsland(n) {
+  const r = rng(n * 7919 + 13);
+  const tiles = [];
+  for (let y = 0; y < CFG.H; y++) {
+    for (let x = 0; x < CFG.W; x++) {
+      const edge = Math.min(x, y, CFG.W - 1 - x, CFG.H - 1 - y);
+      let type;
+      if (edge === 0) type = 'water';
+      else if (edge === 1 && r() < 0.25) type = 'water';   // a ragged coast
+      else {
+        const d = Math.max(Math.abs(x - CX) / (CX - 1), Math.abs(y - CY) / (CY - 1));
+        const roll = d + (r() - 0.5) * 0.22;
+        type = roll < 0.55 ? 'tree' : roll < 0.76 ? 'rock' : roll < 0.93 ? 'copper' : 'gold';
+        if (type !== 'tree' && r() < 0.12) type = 'tree';
+      }
+      tiles.push({ type, hp: maxHpOf(type, n) });
     }
-    else if ((d -= Math.PI * r) < straight) { x = 2 * r; y = -half + d; dx = 0; dy = 1; }
-    else if ((d -= straight) < Math.PI * r) {
-      const a = d / r;
-      x = r + r * Math.cos(a); y = half + r * Math.sin(a); dx = -Math.sin(a); dy = Math.cos(a);
-    }
-    else { d -= Math.PI * r; x = 0; y = half - d; dx = 0; dy = -1; }
-    return { x, y, dx, dy, nx: dy, ny: -dx };
   }
-  return { size, r, half, perim, at };
-}
-
-// The kind of ground at a spot decides what grows there. The farther from
-// the depot, the richer it is.
-function biomeAt(x, y) {
-  const d = Math.hypot(x, y);
-  let ring = 0;
-  while (ring < CFG.rings.length && d > CFG.rings[ring]) ring++;
-  return RES_KEYS[ring];
-}
-const emptyCargo = () => { const c = {}; for (const k of RES_KEYS) c[k] = 0; return c; };
-
-const nodeCache = [];
-function nodesFor(land) {
-  if (!nodeCache[land]) {
-    const lp = loopAt(LANDS[land].size), n = LANDS[land].nodes, list = [];
-    for (let i = 0; i < n; i++) {
-      const pos = (i + 0.5) / n * lp.perim;
-      const p = lp.at(pos / lp.perim);
-      list.push({ pos, type: biomeAt(p.x, p.y) });
+  // The starting track and the station are already clear, and the first ring is all trees.
+  const t = startTrack();
+  for (let y = t.y0 - 1; y <= t.y1 + 1; y++) {
+    for (let x = t.x0 - 1; x <= t.x1 + 1; x++) {
+      const tile = tiles[idx(x, y)];
+      if (x >= t.x0 && x <= t.x1 && y >= t.y0 && y <= t.y1) { tile.type = 'grass'; tile.hp = 0; }
+      else { tile.type = 'tree'; tile.hp = maxHpOf('tree', n); }
     }
-    nodeCache[land] = list;
   }
-  return nodeCache[land];
-}
-function countsFor(land) {
-  const c = emptyCargo();
-  for (const n of nodesFor(land)) c[n.type] += 1;
-  return c;
+  return tiles;
 }
 
 function freshState() {
   return {
-    coins: 0, totalEarned: 0, laps: 0,
-    pos: 0, steam: 0, taps: 0, land: 0,
-    cargo: emptyCargo(),
-    levels: { speed: 0, cargo: 0, power: 0, regrow: 0 },
-    nodes: Array.from({ length: LANDS[0].nodes }, () => 1),   // growth of each tree or rock, 0 to 1
-    lastSeen: 0,
+    coins: 0, island: 1, tiles: makeIsland(1), track: startTrack(),
+    pos: 0, carts: [1], bought: 0, steam: 0, taps: 0, lastSeen: 0,
   };
 }
 
-// What each upgrade level is worth.
-const speedAt  = lvl => CFG.baseSpeed * (1 + 0.1 * lvl);
-const cargoAt  = lvl => CFG.baseCargo + 5 * lvl;
-const powerAt  = lvl => CFG.basePower + 0.5 * lvl;
-const regrowAt = lvl => Math.max(CFG.minRegrow, CFG.baseRegrow * Math.pow(0.93, lvl));
+// The track is a rectangle through the middle of its tiles. Distance along it
+// starts at the top-left corner and runs clockwise.
+const sides = t => ({ w: t.x1 - t.x0, h: t.y1 - t.y0 });
+const perimOf = t => 2 * ((t.x1 - t.x0) + (t.y1 - t.y0));
+function pointAt(t, s) {
+  const { w, h } = sides(t);
+  s = mod(s, 2 * (w + h));
+  if (s < w) return { x: t.x0 + s, y: t.y0 };
+  if ((s -= w) < h) return { x: t.x1, y: t.y0 + s };
+  if ((s -= h) < w) return { x: t.x1 - s, y: t.y1 };
+  s -= w;
+  return { x: t.x0, y: t.y1 - s };
+}
+// The spot on the track closest to a point.
+function nearestS(t, p) {
+  const { w, h } = sides(t);
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const options = [
+    [clamp(p.x, t.x0, t.x1) - t.x0, t.y0, clamp(p.x, t.x0, t.x1)],
+    [w + clamp(p.y, t.y0, t.y1) - t.y0, null, null],
+    [w + h + t.x1 - clamp(p.x, t.x0, t.x1), null, null],
+    [2 * w + h + t.y1 - clamp(p.y, t.y0, t.y1), null, null],
+  ];
+  let best = 0, bestD = Infinity;
+  for (const [s] of options) {
+    const q = pointAt(t, s), d = Math.hypot(q.x - p.x, q.y - p.y);
+    if (d < bestD) { bestD = d; best = s; }
+  }
+  return best;
+}
 
-const speedOf    = st => speedAt(st.levels.speed);
-const cargoOf    = st => cargoAt(st.levels.cargo);
-const powerOf    = st => powerAt(st.levels.power);
-const regrowOf   = st => regrowAt(st.levels.regrow);
-const trackLenOf = st => BASE_LAP * LANDS[st.land].size;
-const lapTimeOf  = st => trackLenOf(st) / speedOf(st);
-const cargoTotal = st => { let t = 0; for (const k of RES_KEYS) t += st.cargo[k]; return t; };
+// The tiles just outside the track, each with the spot on the track where carts reach it.
+const adjCache = new Map();
+function adjacency(t) {
+  const key = t.x0 + ',' + t.y0 + ',' + t.x1 + ',' + t.y1;
+  let list = adjCache.get(key);
+  if (list) return list;
+  const { w, h } = sides(t);
+  list = [];
+  const add = (x, y, s) => { if (x >= 0 && y >= 0 && x < CFG.W && y < CFG.H) list.push({ i: idx(x, y), x, y, s }); };
+  const cl = (v, a, b) => Math.max(a, Math.min(b, v));
+  for (let x = t.x0 - 1; x <= t.x1 + 1; x++) add(x, t.y0 - 1, cl(x, t.x0, t.x1) - t.x0);
+  for (let y = t.y0; y <= t.y1 + 1; y++) add(t.x1 + 1, y, w + cl(y, t.y0, t.y1) - t.y0);
+  for (let x = t.x1; x >= t.x0 - 1; x--) add(x, t.y1 + 1, w + h + t.x1 - cl(x, t.x0, t.x1));
+  for (let y = t.y1; y >= t.y0; y--) add(t.x0 - 1, y, 2 * w + h + t.y1 - y);
+  if (adjCache.size > 400) adjCache.clear();
+  adjCache.set(key, list);
+  return list;
+}
 
-function costOf(st, key) {
-  const u = CFG.upgrades[key];
-  return Math.ceil(u.baseCost * Math.pow(u.growth, st.levels[key]));
-}
-function isMaxed(st, key) {
-  return key === 'regrow' && regrowOf(st) <= CFG.minRegrow;
-}
-function canBuy(st, key) {
-  return !isMaxed(st, key) && st.coins >= costOf(st, key);
-}
-function buy(st, key) {
-  if (!canBuy(st, key)) return false;
-  st.coins -= costOf(st, key);
-  st.levels[key] += 1;
+const powerOf = lvl => Math.round(Math.pow(2.2, lvl - 1));
+const slotsOf = st => Math.min(CFG.maxSlots, Math.floor(perimOf(st.track) * 0.85 / CFG.carLen) - 1);
+const topLevel = st => st.carts.reduce((m, l) => Math.max(m, l), 0);
+const buyLevelOf = st => Math.max(1, topLevel(st) - 2);
+const cartCostOf = st => Math.ceil(CFG.cartBaseCost * Math.pow(CFG.cartCostGrowth, st.bought));
+const canBuyCart = st => st.carts.length < slotsOf(st) && st.coins >= cartCostOf(st);
+function buyCart(st) {
+  if (!canBuyCart(st)) return false;
+  st.coins -= cartCostOf(st);
+  st.bought += 1;
+  st.carts.push(buyLevelOf(st));
+  st.carts.sort((a, b) => b - a);   // strongest carts ride right behind the engine
   return true;
 }
-
-// Extending the line into the next land.
-const nextLand = st => LANDS[st.land + 1] || null;
-function canExpand(st) {
-  const next = nextLand(st);
-  return !!next && st.coins >= next.cost;
+// The lowest level with two carts, or 0 when nothing can merge.
+function mergeLevel(st) {
+  const seen = new Set();
+  let best = 0;
+  for (const l of st.carts) {
+    if (seen.has(l) && (best === 0 || l < best)) best = l;
+    seen.add(l);
+  }
+  return best;
 }
-function expand(st) {
-  if (!canExpand(st)) return false;
-  const lapShare = st.pos / trackLenOf(st);       // keep the train the same share of the way round
-  st.coins -= nextLand(st).cost;
-  st.land += 1;
-  st.pos = lapShare * trackLenOf(st);
-  st.nodes = Array.from({ length: LANDS[st.land].nodes }, () => 1);   // new land arrives fully grown
+function merge(st) {
+  const l = mergeLevel(st);
+  if (!l) return 0;
+  st.carts.splice(st.carts.indexOf(l), 1);
+  st.carts.splice(st.carts.indexOf(l), 1);
+  st.carts.push(l + 1);
+  st.carts.sort((a, b) => b - a);
+  return l + 1;
+}
+
+function hit(st, i, dmg, events) {
+  const tile = st.tiles[i];
+  if (tile.hp <= 0) return;
+  tile.hp -= dmg;
+  if (tile.hp <= 1e-9) {
+    tile.hp = 0;
+    const gain = valueOf(tile.type, st.island);
+    st.coins += gain;
+    if (events) events.push({ type: 'break', i, block: tile.type, amount: gain });
+  } else if (events) events.push({ type: 'hit', i });
+}
+
+// A side of the track moves out one tile once every tile along it is gone.
+function rowClear(st, x0, y0, x1, y1) {
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (st.tiles[idx(x, y)].hp > 0) return false;
   return true;
 }
-
-function harvest(st, i, events) {
-  const space = cargoOf(st) - cargoTotal(st);
-  const grown = st.nodes[i];
-  if (space <= 1e-9 || grown < CFG.minCut) return;
-  const power = powerOf(st);
-  const take = Math.min(power * grown, space);
-  const type = nodesFor(st.land)[i].type;
-  st.nodes[i] = grown - take / power;   // a full wagon leaves part of it standing
-  st.cargo[type] += take;
-  if (events) events.push({ type: 'cut', node: i, res: type, amount: take });
-}
-function sellCargo(st, events) {
-  st.laps += 1;
-  let gain = 0;
-  for (const k of RES_KEYS) { gain += st.cargo[k] * RES[k].price; st.cargo[k] = 0; }
-  if (gain <= 0) return;
-  st.coins += gain;
-  st.totalEarned += gain;
-  if (events) events.push({ type: 'sell', amount: gain });
+function tryExpand(st, events) {
+  const t = st.track;
+  let grew = false;
+  const before = pointAt(t, st.pos);
+  for (let again = true; again;) {
+    again = false;
+    if (t.y0 > LIMIT.y0 && rowClear(st, t.x0, t.y0 - 1, t.x1, t.y0 - 1)) { t.y0--; again = true; }
+    if (t.x1 < LIMIT.x1 && rowClear(st, t.x1 + 1, t.y0, t.x1 + 1, t.y1)) { t.x1++; again = true; }
+    if (t.y1 < LIMIT.y1 && rowClear(st, t.x0, t.y1 + 1, t.x1, t.y1 + 1)) { t.y1++; again = true; }
+    if (t.x0 > LIMIT.x0 && rowClear(st, t.x0 - 1, t.y0, t.x0 - 1, t.y1)) { t.x0--; again = true; }
+    grew = grew || again;
+  }
+  if (grew) {
+    st.pos = nearestS(t, before);   // the train stays where it was on screen
+    if (events) events.push({ type: 'grow' });
+  }
+  return grew;
 }
 
-// Move the game forward by a small slice of time (well under one lap).
+// Move the game forward by a small slice of time (well under one tile of travel).
 function step(st, dt, events) {
-  const L = trackLenOf(st);
-  const nodes = nodesFor(st.land);
-  const grow = dt / regrowOf(st);
-  for (let i = 0; i < st.nodes.length; i++) {
-    if (st.nodes[i] < 1) st.nodes[i] = Math.min(1, st.nodes[i] + grow);
-  }
-  const dist = speedOf(st) * (1 + st.steam) * dt;
+  const t = st.track, P = perimOf(t);
+  const dist = CFG.speed * (1 + st.steam) * dt;
   st.steam = Math.max(0, st.steam - CFG.steamDecay * dt);
-
-  // Everything the engine passes in this slice, in the order it passes it.
-  const from = st.pos;
-  const hits = [];
-  for (let i = 0; i < nodes.length; i++) {
-    const off = mod(nodes[i].pos - from, L);
-    if (off > 0 && off <= dist) hits.push([off, i]);
+  const adj = adjacency(t);
+  for (let c = 0; c < st.carts.length; c++) {
+    const from = st.pos - (c + 1) * CFG.carLen;
+    const dmg = powerOf(st.carts[c]);
+    for (const a of adj) {
+      const off = mod(a.s - from, P);
+      if (off > 0 && off <= dist) hit(st, a.i, dmg, events);
+    }
   }
-  const depotOff = mod(-from, L);       // the depot is at position 0
-  if (depotOff > 0 && depotOff <= dist) hits.push([depotOff, -1]);
-  hits.sort((a, b) => a[0] - b[0]);
-  for (const [, i] of hits) {
-    if (i >= 0) harvest(st, i, events); else sellCargo(st, events);
-  }
-  st.pos = mod(from + dist, L);
+  st.pos = mod(st.pos + dist, P);
+  tryExpand(st, events);
 }
 
-// Move forward by any amount of time, in safe slices. Returns coins earned.
+// Move forward by any amount of time, in safe slices.
 function advance(st, seconds, events) {
-  const before = st.totalEarned;
-  const slice = Math.min(0.1, 0.2 * BASE_LAP / (speedOf(st) * (1 + CFG.steamMax)));
+  const before = st.coins;
+  const slice = Math.min(0.1, 0.4 / (CFG.speed * (1 + CFG.steamMax)));
   let left = seconds;
   while (left > 1e-9) {
     const dt = Math.min(slice, left);
     step(st, dt, events);
     left -= dt;
   }
-  return st.totalEarned - before;
+  return st.coins - before;
 }
 
 function addSteam(st) {
@@ -472,59 +467,60 @@ function addSteam(st) {
   st.taps += 1;
 }
 
-// What one lap offers and what the wagon carries home, filling it in the
-// order the train meets things.
-function lapHaul(st) {
-  const regrownShare = Math.min(1, lapTimeOf(st) / regrowOf(st));
-  const each = powerOf(st) * regrownShare;
-  let space = cargoOf(st), offered = 0, value = 0;
-  for (const n of nodesFor(st.land)) {
-    offered += each;
-    const take = Math.min(each, space);
-    space -= take;
-    value += take * RES[n.type].price;
+// How much of the island is cleared, 0 to 1.
+function clearedShare(st) {
+  let total = 0, left = 0;
+  for (const tile of st.tiles) {
+    if (!BLOCKS[tile.type]) continue;
+    total += maxHpOf(tile.type, st.island);
+    left += tile.hp;
   }
-  return { offered, value };
+  return total ? 1 - left / total : 1;
 }
-function incomePerMin(st) {
-  return lapHaul(st).value * 60 / lapTimeOf(st);
-}
-// Which part is holding income back right now.
-function bottleneck(st) {
-  if (lapHaul(st).offered > cargoOf(st) + 1e-9) return 'cargo';
-  if (lapTimeOf(st) < regrowOf(st) - 1e-9 && !isMaxed(st, 'regrow')) return 'regrow';
-  return 'none';
+const islandDone = st => st.tiles.every(tile => tile.hp <= 0);
+function sail(st) {
+  if (!islandDone(st)) return false;
+  st.island += 1;
+  st.tiles = makeIsland(st.island);
+  st.track = startTrack();
+  st.pos = 0;
+  return true;
 }
 
 function serialize(st, now) {
   return JSON.stringify({
-    v: 2, coins: st.coins, totalEarned: st.totalEarned, laps: st.laps,
-    pos: st.pos, cargo: st.cargo, taps: st.taps, land: st.land,
-    levels: st.levels, nodes: st.nodes, lastSeen: now,
+    v: 3, coins: st.coins, island: st.island, track: st.track, pos: st.pos,
+    carts: st.carts, bought: st.bought, taps: st.taps,
+    hp: st.tiles.map(tile => Math.round(tile.hp * 1000) / 1000), lastSeen: now,
   });
 }
-// Reads a save, including saves from version 0.1 (wood only, one land).
 function deserialize(text) {
   const st = freshState();
   let raw;
   try { raw = JSON.parse(text); } catch (e) { return st; }
-  if (!raw || typeof raw !== 'object' || (raw.v !== 1 && raw.v !== 2)) return st;
+  if (!raw || typeof raw !== 'object' || raw.v !== 3) return st;
   const num = (x, lo, hi, dflt) => (typeof x === 'number' && isFinite(x)) ? Math.min(hi, Math.max(lo, x)) : dflt;
-  st.coins = num(raw.coins, 0, 1e300, 0);
-  st.totalEarned = num(raw.totalEarned, 0, 1e300, 0);
-  st.laps = Math.floor(num(raw.laps, 0, 1e15, 0));
-  st.taps = Math.floor(num(raw.taps, 0, 1e15, 0));
-  st.land = Math.floor(num(raw.land, 0, LANDS.length - 1, 0));
-  st.pos = mod(num(raw.pos, 0, 1e9, 0), trackLenOf(st));
-  for (const k of KEYS) st.levels[k] = Math.floor(num(raw.levels && raw.levels[k], 0, 5000, 0));
-  const cap = cargoOf(st);
-  if (typeof raw.cargo === 'number') st.cargo.wood = num(raw.cargo, 0, cap, 0);
-  else if (raw.cargo && typeof raw.cargo === 'object') {
-    let room = cap;
-    for (const k of RES_KEYS) { st.cargo[k] = num(raw.cargo[k], 0, room, 0); room -= st.cargo[k]; }
+  st.island = Math.floor(num(raw.island, 1, 1000, 1));
+  st.tiles = makeIsland(st.island);
+  if (Array.isArray(raw.hp) && raw.hp.length === st.tiles.length) {
+    st.tiles.forEach((tile, i) => { tile.hp = num(raw.hp[i], 0, maxHpOf(tile.type, st.island), tile.hp); });
   }
-  const saved = Array.isArray(raw.nodes) ? raw.nodes : Array.isArray(raw.trees) ? raw.trees : [];
-  st.nodes = Array.from({ length: LANDS[st.land].nodes }, (_, i) => num(saved[i], 0, 1, 1));
+  const t = raw.track || {};
+  const tr = {
+    x0: Math.floor(num(t.x0, LIMIT.x0, CX - 1, CX - 1)), y0: Math.floor(num(t.y0, LIMIT.y0, CY - 1, CY - 1)),
+    x1: Math.floor(num(t.x1, CX + 1, LIMIT.x1, CX + 1)), y1: Math.floor(num(t.y1, CY + 1, LIMIT.y1, CY + 1)),
+  };
+  // The track's own tiles must be clear.
+  for (let y = tr.y0; y <= tr.y1; y++) for (let x = tr.x0; x <= tr.x1; x++) st.tiles[idx(x, y)].hp = 0;
+  st.track = tr;
+  st.coins = num(raw.coins, 0, 1e300, 0);
+  st.pos = mod(num(raw.pos, 0, 1e6, 0), perimOf(tr));
+  st.bought = Math.floor(num(raw.bought, 0, 1e6, 0));
+  st.taps = Math.floor(num(raw.taps, 0, 1e15, 0));
+  if (Array.isArray(raw.carts)) {
+    const carts = raw.carts.map(l => Math.floor(num(l, 1, 60, 1))).slice(0, CFG.maxSlots);
+    if (carts.length) st.carts = carts.sort((a, b) => b - a);
+  }
   st.lastSeen = num(raw.lastSeen, 0, 1e15, 0);
   return st;
 }
@@ -538,23 +534,22 @@ function fmt(n) {
   const cut = Math.floor(n * Math.pow(10, digits) + 1e-9) / Math.pow(10, digits);
   return cut.toFixed(digits) + units[i];
 }
-const fmt1 = n => (n >= 1000 ? fmt(n) : Math.abs(n - Math.round(n)) < 0.05 ? String(Math.round(n)) : n.toFixed(1));
 
 const Logic = {
-  CFG, KEYS, RES, RES_KEYS, LANDS, BASE_LAP, loopAt, biomeAt, nodesFor, countsFor, freshState,
-  speedAt, cargoAt, powerAt, regrowAt, speedOf, cargoOf, powerOf, regrowOf, trackLenOf, lapTimeOf, cargoTotal,
-  costOf, isMaxed, canBuy, buy, nextLand, canExpand, expand,
-  step, advance, addSteam, lapHaul, incomePerMin, bottleneck,
-  serialize, deserialize, fmt, fmt1,
+  CFG, BLOCKS, CX, CY, LIMIT, idx, makeIsland, freshState, startTrack, islandMult, maxHpOf, valueOf,
+  perimOf, pointAt, nearestS, adjacency, powerOf, slotsOf, topLevel, buyLevelOf, cartCostOf, canBuyCart, buyCart,
+  mergeLevel, merge, tryExpand, step, advance, addSteam, clearedShare, islandDone, sail,
+  serialize, deserialize, fmt,
 };
 // </logic>
 
 if (typeof document === 'undefined') return;
 
 // ---------------------------------------------------------------- saving
-const SAVE_KEY = 'loopline.save.v1';
+const SAVE_KEY = 'loopline.island.v1';
 function loadState() {
   try {
+    localStorage.removeItem('loopline.save.v1');   // saves from the old game are retired
     const text = localStorage.getItem(SAVE_KEY);
     if (text) return deserialize(text);
   } catch (e) { /* storage unavailable: play without saving */ }
@@ -569,106 +564,80 @@ let st = loadState();
 // ---------------------------------------------------------------- page elements
 const $ = id => document.getElementById(id);
 const el = {
-  coins: $('coins'), coinsWrap: $('coinsWrap'), rate: $('rate'),
-  cargoText: $('cargoText'), tip: $('tip'),
-  bars: {},
+  coins: $('coins'), coinsWrap: $('coinsWrap'), islandName: $('islandName'),
+  clearText: $('clearText'), clearFill: $('clearFill'), tip: $('tip'),
   map: $('map'), canvas: $('c'), steam: $('steam'), hint: $('hint'), toast: $('toast'),
-  land: $('land'), landName: $('landName'), landBlurb: $('landBlurb'), landCost: $('landCost'), landCostWrap: $('landCostWrap'),
-  reset: $('reset'),
+  slots: $('slots'), buy: $('buy'), buyStat: $('buyStat'), buyCost: $('buyCost'),
+  merge: $('merge'), mergeStat: $('mergeStat'), mergeNote: $('mergeNote'),
+  sail: $('sail'), sailName: $('sailName'), sailStat: $('sailStat'), reset: $('reset'),
 };
-const upEls = {};
-const LOAD_COLOR = { wood: '#b5773c', hardwood: '#7d4423', stone: '#a9a79b', iron: '#8f5b45', gold: '#f0c64a', crystal: '#9fd8ea' };
-for (const k of RES_KEYS) {
-  const seg = document.createElement('div');
-  seg.style.background = LOAD_COLOR[k];
-  $('cargoBar').appendChild(seg);
-  el.bars[k] = seg;
-}
-for (const key of KEYS) {
-  const b = $('up-' + key);
-  upEls[key] = { btn: b, lvl: b.querySelector('.up-lvl'), stat: b.querySelector('.up-stat'), cost: b.querySelector('.cost-n') };
-}
 const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-// Only touch the page when a value actually changes.
+// Each cart level has its own colour, on the map and in the yard.
+const LEVEL_COLORS = ['#d1a13a', '#7fae4e', '#3f8fc4', '#9a68d4', '#e0603f', '#2fb3a3', '#d65a96', '#f2d14a'];
+const levelColor = l => LEVEL_COLORS[(l - 1) % LEVEL_COLORS.length];
+
 const shown = new Map();
 function setText(node, text) { if (shown.get(node) !== text) { shown.set(node, text); node.textContent = text; } }
 function setHTML(node, html) { if (shown.get(node) !== html) { shown.set(node, html); node.innerHTML = html; } }
 function setAttr(node, name, value) { if (node.getAttribute(name) !== value) node.setAttribute(name, value); }
 
-const TIPS = {
-  land: 'You have enough coins to extend the line into new land.',
-  cargo: 'The wagon fills before the lap ends. A bigger wagon earns more.',
-  regrow: 'Things are still growing back when the train returns. Faster growth earns more.',
-  none: 'The wagon has room to spare. Better tools or a faster engine earn more.',
-};
-const LIMIT_BUTTON = { cargo: 'cargo', regrow: 'regrow' };
-
-function statLine(key) {
-  const lvl = st.levels[key];
-  if (isMaxed(st, key)) return 'Regrow <b>' + regrowAt(lvl).toFixed(1) + 's</b>';
-  const pair = (a, b) => '<b>' + a + '</b> → <b>' + b + '</b>';
-  const L = trackLenOf(st);
-  if (key === 'speed') return 'Lap ' + pair((L / speedAt(lvl)).toFixed(1) + 's', (L / speedAt(lvl + 1)).toFixed(1) + 's');
-  if (key === 'cargo') return 'Holds ' + pair(fmt(cargoAt(lvl)), fmt(cargoAt(lvl + 1)));
-  if (key === 'power') return (st.land < 2 ? 'Wood per tree ' : 'Per tree or rock ') + pair(fmt1(powerAt(lvl)), fmt1(powerAt(lvl + 1)));
-  return 'Regrow ' + pair(regrowAt(lvl).toFixed(1) + 's', regrowAt(lvl + 1).toFixed(1) + 's');
-}
-
-// What extending into a land adds, in the player's words.
-function landBlurb(land) {
-  const now = countsFor(land), before = countsFor(land - 1);
-  const more = LANDS[land].nodes - LANDS[land - 1].nodes;
-  for (const k of RES_KEYS) {
-    if (now[k] > 0 && before[k] === 0) return 'Adds ' + RES[k].name.toLowerCase() + ', worth ' + RES[k].price + ' coins each';
+let newSlot = -1;
+function renderSlots() {
+  const cap = slotsOf(st), pairLevel = mergeLevel(st);
+  const key = st.carts.join(',') + '|' + cap + '|' + pairLevel + '|' + newSlot;
+  if (shown.get(el.slots) === key) return;
+  shown.set(el.slots, key);
+  let html = '';
+  for (let i = 0; i < cap; i++) {
+    const l = st.carts[i];
+    if (l) {
+      const cls = 'slot' + (l === pairLevel ? ' pair' : '') + (i === newSlot ? ' new' : '');
+      html += '<div class="' + cls + '" style="background:' + levelColor(l) + '" aria-label="Level ' + l + ' cart">' + l + '</div>';
+    } else html += '<div class="slot empty" aria-hidden="true"></div>';
   }
-  return 'A longer loop with ' + more + ' more stops';
+  el.slots.innerHTML = html;
 }
 
 function updateHud() {
   setText(el.coins, fmt(st.coins));
-  setText(el.rate, fmt(incomePerMin(st)));
-  const cap = cargoOf(st);
-  setText(el.cargoText, fmt1(Math.min(cap, cargoTotal(st))) + ' / ' + fmt(cap));
-  for (const k of RES_KEYS) {
-    const pct = (Math.round(Math.min(1, st.cargo[k] / cap) * 200) / 2) + '%';
-    if (shown.get(el.bars[k]) !== pct) { shown.set(el.bars[k], pct); el.bars[k].style.width = pct; }
+  setText(el.islandName, 'Island ' + st.island);
+  const share = clearedShare(st), done = share >= 1 - 1e-9;
+  const pct = done ? 100 : Math.min(99, Math.floor(share * 100));
+  setText(el.clearText, pct + '%');
+  if (shown.get(el.clearFill) !== pct) { shown.set(el.clearFill, pct); el.clearFill.style.width = pct + '%'; }
+
+  renderSlots();
+  const cap = slotsOf(st), full = st.carts.length >= cap;
+  const cost = cartCostOf(st), lvl = buyLevelOf(st);
+  setHTML(el.buyStat, full ? 'Train is full (' + cap + ' carts)' : 'Adds a level <b>' + lvl + '</b> cart');
+  setText(el.buyCost, fmt(cost));
+  setAttr(el.buy, 'aria-disabled', String(!canBuyCart(st)));
+  el.buy.classList.toggle('ready', canBuyCart(st));
+
+  const ml = mergeLevel(st);
+  setHTML(el.mergeStat, ml ? 'Two level <b>' + ml + '</b> → one level <b>' + (ml + 1) + '</b>' : 'Needs two carts of the same level');
+  setAttr(el.merge, 'aria-disabled', String(!ml));
+  el.merge.classList.toggle('ready', !!ml && full);
+
+  if (el.sail.hidden === done) el.sail.hidden = !done;
+  if (done) {
+    setText(el.sailName, 'Sail to Island ' + (st.island + 1));
+    setText(el.sailStat, 'Tougher blocks worth ' + CFG.islandGrowth + '× more. Your carts and coins come with you.');
   }
 
-  const next = nextLand(st);
-  const ready = canExpand(st);
-  if (next) {
-    setText(el.landName, 'Extend to ' + next.name);
-    setText(el.landBlurb, landBlurb(st.land + 1));
-    setText(el.landCost, fmt(next.cost));
-    const p = ready ? '0%' : Math.round(Math.min(1, st.coins / next.cost) * 100) + '%';
-    if (shown.get(el.land) !== p) { shown.set(el.land, p); el.land.style.setProperty('--p', p); }
-    if (el.landCostWrap.hidden) el.landCostWrap.hidden = false;
-  } else {
-    setText(el.landName, 'All land claimed');
-    setText(el.landBlurb, 'More land is on the way.');
-    if (!el.landCostWrap.hidden) el.landCostWrap.hidden = true;
-    if (shown.get(el.land) !== '0%') { shown.set(el.land, '0%'); el.land.style.setProperty('--p', '0%'); }
-  }
-  setAttr(el.land, 'aria-disabled', String(!ready));
-  el.land.classList.toggle('ready', ready);
+  let tip;
+  if (done) tip = 'Island cleared. Sail on to the next one.';
+  else if (full && ml) tip = 'The train is full. Merge two matching carts to make room.';
+  else if (canBuyCart(st)) tip = 'Another cart means more mining every lap.';
+  else if (st.track.x0 === LIMIT.x0 && st.track.x1 === LIMIT.x1 && st.track.y0 === LIMIT.y0 && st.track.y1 === LIMIT.y1) tip = 'The track has reached the coast. Clear the last blocks.';
+  else tip = 'Clear every block along a side and the track grows outward.';
+  setText(el.tip, tip);
 
-  const limit = bottleneck(st);
-  setText(el.tip, ready ? TIPS.land : TIPS[limit]);
-  for (const key of KEYS) {
-    const u = upEls[key];
-    setText(u.lvl, 'Lv ' + st.levels[key]);
-    setHTML(u.stat, statLine(key));
-    setText(u.cost, isMaxed(st, key) ? 'Max' : fmt(costOf(st, key)));
-    setAttr(u.btn, 'aria-disabled', String(!canBuy(st, key)));
-    u.btn.classList.toggle('limit', LIMIT_BUTTON[limit] === key);
-  }
   if (st.steam > 0.02) {
     el.steam.hidden = false;
-    setText(el.steam, 'Steam ×' + (1 + st.steam).toFixed(2));
-  } else if (!el.steam.hidden) {
-    el.steam.hidden = true;
-  }
+    setText(el.steam, 'Speed ×' + (1 + st.steam).toFixed(2));
+  } else if (!el.steam.hidden) el.steam.hidden = true;
   const wantHint = st.taps < 5;
   if (el.hint.hidden === wantHint) el.hint.hidden = !wantHint;
 }
@@ -684,113 +653,25 @@ function showToast(html, ms) {
 // ---------------------------------------------------------------- drawing
 const ctx = el.canvas.getContext('2d');
 const COL = {
-  land: { wood: '#5d7a48', hardwood: '#4c6b45', stone: '#8c897a', iron: '#8b6c57', gold: '#a3915a', crystal: '#7e8ca3' },
-  speck: {
-    wood: ['#6f8d55', '#506b3d'], hardwood: ['#5d7d52', '#3e5a39'], stone: ['#a3a091', '#74725f'],
-    iron: ['#a5836b', '#725645'], gold: ['#c0aa6a', '#877542'], crystal: ['#9aa7bd', '#667389'],
-  },
+  sea: '#2f6f8f', seaDeep: '#285f7b', wave: 'rgba(255, 255, 255, 0.10)',
+  sand: '#d9c48c', grass: '#6b9b4f', grassAlt: '#679649', dirt: 'rgba(110, 84, 50, 0.18)',
   ballast: '#8b8069', sleeper: '#5b4733', rail: '#2b2824',
-  trunk: '#6b4a2b', stumpTop: '#c79a63', shadow: 'rgba(20, 30, 18, 0.28)',
-  rock: {
-    stone:   { base: '#6f6e68', light: '#9a998f', fleck: null },
-    iron:    { base: '#57463e', light: '#78625a', fleck: '#cf6a3d' },
-    gold:    { base: '#7d6f49', light: '#9a8a5a', fleck: '#f6cf4d' },
-    crystal: { base: '#55627a', light: '#7384a0', fleck: '#c9f1ff' },
-  },
-  engine: '#c9452c', engineDark: '#8f2d1c', iron: '#2b2824', ironLight: '#57514a',
-  wagon: '#d1a13a', wagonDark: '#8a6a1f', wagonBed: '#3a2f22',
-  load: LOAD_COLOR,
-  depotWall: '#7a4a32', depotRoof: '#3b2a22', depotTrim: '#e2a52e', platform: '#b9ad93',
-  float: { wood: '#f0c58d', hardwood: '#e9a877', stone: '#e4e2d6', iron: '#f0a585', gold: '#ffe07a', crystal: '#c9f1ff' }, coin: '#f3bf4f',
-};
-const LEAVES = {
-  wood: [['#3f6b34', '#5c8c44'], ['#3a6638', '#55874a'], ['#476f2f', '#6a963f']],
-  hardwood: [['#8a4a24', '#b96b2d'], ['#7c3f22', '#a85c2a'], ['#96582a', '#c47a34']],
+  trunk: '#6b4a2b', shadow: 'rgba(20, 30, 18, 0.28)',
+  leaves: [['#3f6b34', '#5c8c44'], ['#3a6638', '#55874a'], ['#476f2f', '#6a963f']],
+  rock: { rock: ['#6f6e68', '#9a998f', null], copper: ['#5c4a40', '#7a6458', '#d5793f'], gold: ['#6e6347', '#8f8160', '#f6cf4d'] },
+  engine: '#c9452c', engineDark: '#8f2d1c', iron: '#2b2824', ironLight: '#57514a', trim: '#e2a52e',
+  station: '#7a4a32', stationRoof: '#3b2a22',
+  coin: '#ffd970',
 };
 
-let W = 0, H = 0, dpr = 1, U = 1;
-let cam = null, nodePts = [], groundCache = null;
-// The loop size on screen. It glides from "from" to "to" when the line is extended.
-const view = { size: LANDS[st.land].size, from: 1, to: 1, t: 1, dur: 1.8 };
-const floats = [], puffs = [];
-let puffClock = 0;
+let W = 0, H = 0, dpr = 1, T = 20, OX = 0, OY = 0;
+let groundCache = null;
+const floats = [], chips = [], puffs = [];
+let hitTimes = new Float32Array(CFG.W * CFG.H);
+let puffClock = 0, clock = 0;
 
-function rng(seed) {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6D2B79F5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-// Wavy borders between the rings of ground, so they do not look ruled.
-const ringEdge = (ring, angle) => CFG.rings[ring] + 10 * Math.sin(3 * angle + ring) + 7 * Math.sin(7 * angle + 2 * ring);
-function groundAt(x, y) {
-  const d = Math.hypot(x, y), a = Math.atan2(y, x);
-  let ring = 0;
-  while (ring < CFG.rings.length && d > ringEdge(ring, a)) ring++;
-  return RES_KEYS[ring];
-}
-
-// Small flecks scattered over the whole world, made once.
-const specks = (() => {
-  const r = rng(42), list = [];
-  const X0 = -700, X1 = 1500, Y0 = -1050, Y1 = 1050;
-  const n = Math.round((X1 - X0) * (Y1 - Y0) / 640);
-  for (let i = 0; i < n; i++) {
-    const x = X0 + r() * (X1 - X0), y = Y0 + r() * (Y1 - Y0);
-    list.push({ x, y, a: 1.2 + r() * 2.2, b: 0.8 + r() * 1.2, rot: r() * 3, alpha: 0.35 + r() * 0.4, color: COL.speck[groundAt(x, y)][r() < 0.5 ? 0 : 1] });
-  }
-  return list;
-})();
-
-// The camera always fits the whole loop on screen. As the loop grows the map
-// zooms out; trains and trees shrink more slowly than the land so they stay readable.
-function computeCam(size) {
-  const lp = loopAt(size);
-  const tall = H >= W;                      // on a wide screen the world is drawn turned on its side
-  const sw = tall ? W : H, sh = tall ? H : W;
-  const fit = (l, pad) => Math.max(0.05, Math.min((sw - 2 * pad) / (2 * l.r), (sh - 2 * pad) / (2 * (l.half + l.r))));
-  const S0 = fit(loopAt(1), 52 * U);
-  let S = fit(lp, 52 * U), E = U;
-  for (let i = 0; i < 3; i++) { E = U * Math.pow(Math.min(1, S / S0), 0.6); S = fit(lp, 52 * E); }
-  return { lp, S, E, tall, sw, sh, ox: sw / 2 - lp.r * S, oy: sh / 2 };
-}
-function toScreen(wx, wy) {
-  const X = cam.ox + wx * cam.S, Y = cam.oy + wy * cam.S;
-  return cam.tall ? [X, Y] : [Y, X];
-}
-function trackPt(f) {
-  const p = cam.lp.at(f);
-  const s = toScreen(p.x, p.y);
-  return cam.tall
-    ? { x: s[0], y: s[1], dx: p.dx, dy: p.dy, nx: p.nx, ny: p.ny }
-    : { x: s[0], y: s[1], dx: p.dy, dy: p.dx, nx: p.ny, ny: p.nx };
-}
-
-function layoutNodes() {
-  const nodes = nodesFor(st.land), L = trackLenOf(st);
-  nodePts = nodes.map((n, i) => {
-    const p = trackPt(n.pos / L);
-    // Things alternate sides of the track; the pair beside the depot stay outside to leave it room.
-    const inside = i % 2 === 1 && i !== nodes.length - 1;
-    const off = (inside ? -28 : 30) * cam.E;
-    return { x: p.x + p.nx * off, y: p.y + p.ny * off, type: n.type, tone: (LEAVES[n.type] || LEAVES.wood)[(i * 7 + 3) % 3], seed: (i * 0.618) % 1 };
-  });
-}
-
-function tracePath(c, offset) {
-  c.beginPath();
-  const n = 240;
-  for (let i = 0; i <= n; i++) {
-    const p = trackPt(i / n);
-    const x = p.x + p.nx * offset, y = p.y + p.ny * offset;
-    if (i === 0) c.moveTo(x, y); else c.lineTo(x, y);
-  }
-  c.closePath();
-}
+const tileX = x => OX + (x + 0.5) * T;
+const tileY = y => OY + (y + 0.5) * T;
 
 function roundRect(c, x, y, w, h, r) {
   c.beginPath();
@@ -800,266 +681,239 @@ function roundRect(c, x, y, w, h, r) {
   c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
 }
 
-// Ground, track and depot: everything that stays put.
-function paintGround(c) {
-  const E = cam.E, S = cam.S;
-  const wx0 = -cam.ox / S, wx1 = (cam.sw - cam.ox) / S, wy0 = -cam.oy / S, wy1 = (cam.sh - cam.oy) / S;
-  // Rings of ground around the depot, richest on the outside, painted from the outside in.
-  c.fillStyle = COL.land[RES_KEYS[CFG.rings.length]]; c.fillRect(0, 0, W, H);
-  for (let ring = CFG.rings.length - 1; ring >= 0; ring--) {
-    c.beginPath();
-    for (let i = 0; i < 120; i++) {
-      const a = i / 120 * Math.PI * 2, d = ringEdge(ring, a);
-      const s = toScreen(Math.cos(a) * d, Math.sin(a) * d);
-      if (i) c.lineTo(s[0], s[1]); else c.moveTo(s[0], s[1]);
-    }
-    c.closePath();
-    c.fillStyle = COL.land[RES_KEYS[ring]]; c.fill();
-  }
-  for (const k of specks) {
-    if (k.x < wx0 - 6 || k.x > wx1 + 6 || k.y < wy0 - 6 || k.y > wy1 + 6) continue;
-    const s = toScreen(k.x, k.y);
-    c.fillStyle = k.color; c.globalAlpha = k.alpha;
-    c.beginPath(); c.ellipse(s[0], s[1], k.a * E, k.b * E, k.rot, 0, 7); c.fill();
-  }
-  c.globalAlpha = 1;
-  tracePath(c, 0); c.fillStyle = 'rgba(255, 255, 255, 0.05)'; c.fill();
-
-  // Track bed, sleepers, then the two rails.
-  c.lineJoin = 'round';
-  tracePath(c, 0); c.strokeStyle = 'rgba(20, 30, 18, 0.22)'; c.lineWidth = 26 * E; c.stroke();
-  tracePath(c, 0); c.strokeStyle = COL.ballast; c.lineWidth = 21 * E; c.stroke();
-  tracePath(c, 0); c.strokeStyle = COL.sleeper; c.lineWidth = 16 * E; c.setLineDash([3 * E, 6.5 * E]); c.stroke();
-  c.setLineDash([]);
-  c.strokeStyle = COL.rail; c.lineWidth = Math.max(1, 2 * E);
-  tracePath(c, 4.5 * E); c.stroke();
-  tracePath(c, -4.5 * E); c.stroke();
-
-  // Depot: a platform beside the track and a shed behind it.
-  const d = trackPt(0), ang = Math.atan2(d.dy, d.dx);
-  const bx = d.x - d.nx * 36 * E, by = d.y - d.ny * 36 * E;
-  c.save();
-  c.translate(d.x - d.nx * 17 * E, d.y - d.ny * 17 * E); c.rotate(ang);
-  c.fillStyle = COL.platform; roundRect(c, -30 * E, -5 * E, 60 * E, 10 * E, 2 * E); c.fill();
-  c.restore();
-  c.save();
-  c.translate(bx, by); c.rotate(ang);
-  c.fillStyle = COL.shadow; roundRect(c, -22 * E, -10 * E, 48 * E, 26 * E, 3 * E); c.fill();
-  c.fillStyle = COL.depotWall; roundRect(c, -24 * E, -13 * E, 48 * E, 26 * E, 3 * E); c.fill();
-  c.fillStyle = COL.depotRoof; roundRect(c, -21 * E, -10 * E, 42 * E, 20 * E, 2 * E); c.fill();
-  c.strokeStyle = COL.depotTrim; c.lineWidth = 2 * E;
-  c.beginPath(); c.moveTo(-21 * E, 0); c.lineTo(21 * E, 0); c.stroke();
-  c.restore();
-  const ix = -d.nx, iy = -d.ny;   // pointing into the loop
-  c.font = '700 ' + Math.max(10, Math.round(13 * E)) + 'px "Barlow Condensed", "Arial Narrow", sans-serif';
-  c.fillStyle = 'rgba(242, 236, 217, 0.9)';
-  if (Math.abs(ix) > 0.5) {
-    c.textAlign = ix > 0 ? 'left' : 'right'; c.textBaseline = 'middle';
-    c.fillText('DEPOT', bx + ix * 20 * E, by);
-  } else {
-    c.textAlign = 'center'; c.textBaseline = iy > 0 ? 'top' : 'bottom';
-    c.fillText('DEPOT', bx, by + iy * 20 * E);
-  }
-}
-function cacheGround() {
+// Sea, sand and grass never change on an island, so they are painted once.
+function paintGround() {
   const cv = document.createElement('canvas');
   cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
   const c = cv.getContext('2d');
   c.scale(dpr, dpr);
-  paintGround(c);
+  c.fillStyle = COL.sea; c.fillRect(0, 0, W, H);
+  const r = rng(st.island * 31 + 7);
+  c.strokeStyle = COL.wave; c.lineWidth = Math.max(1, T * 0.06); c.lineCap = 'round';
+  for (let i = 0; i < Math.round(W * H / 2200); i++) {
+    const x = r() * W, y = r() * H, len = T * (0.4 + r() * 0.5);
+    c.beginPath(); c.moveTo(x, y); c.quadraticCurveTo(x + len / 2, y - T * 0.12, x + len, y); c.stroke();
+  }
+  const land = (x, y) => x >= 0 && y >= 0 && x < CFG.W && y < CFG.H && st.tiles[idx(x, y)].type !== 'water';
+  // Shallow water and a sandy rim first, then grass on top.
+  c.fillStyle = 'rgba(120, 190, 200, 0.35)';
+  for (let y = 0; y < CFG.H; y++) for (let x = 0; x < CFG.W; x++) {
+    if (!land(x, y)) continue;
+    roundRect(c, OX + (x - 0.38) * T, OY + (y - 0.38) * T, T * 1.76, T * 1.76, T * 0.7); c.fill();
+  }
+  c.fillStyle = COL.sand;
+  for (let y = 0; y < CFG.H; y++) for (let x = 0; x < CFG.W; x++) {
+    if (!land(x, y)) continue;
+    roundRect(c, OX + (x - 0.16) * T, OY + (y - 0.16) * T, T * 1.32, T * 1.32, T * 0.45); c.fill();
+  }
+  for (let y = 0; y < CFG.H; y++) for (let x = 0; x < CFG.W; x++) {
+    if (!land(x, y)) continue;
+    c.fillStyle = (x + y) % 2 ? COL.grass : COL.grassAlt;
+    c.fillRect(OX + x * T - 0.5, OY + y * T - 0.5, T + 1, T + 1);
+  }
+  // Tufts of grass.
+  c.fillStyle = 'rgba(40, 70, 30, 0.22)';
+  for (let y = 0; y < CFG.H; y++) for (let x = 0; x < CFG.W; x++) {
+    if (!land(x, y)) continue;
+    for (let k = 0; k < 2; k++) {
+      c.beginPath(); c.ellipse(OX + (x + 0.15 + r() * 0.7) * T, OY + (y + 0.15 + r() * 0.7) * T, T * 0.05, T * 0.03, 0, 0, 7); c.fill();
+    }
+  }
   groundCache = cv;
 }
 
-function refreshView() {
-  cam = computeCam(view.size);
-  layoutNodes();
-}
 function resize() {
   const box = el.map.getBoundingClientRect();
   if (box.width < 10 || box.height < 10) return;
   W = box.width; H = box.height;
   dpr = Math.min(3, window.devicePixelRatio || 1);
   el.canvas.width = Math.round(W * dpr); el.canvas.height = Math.round(H * dpr);
-  U = Math.min(1.6, Math.max(0.8, Math.min(W, H) / 360));
-  refreshView();
-  cacheGround();
-}
-function glideTo(size) {
-  view.from = view.size; view.to = size; view.t = reduceMotion ? 1 : 0;
-  if (reduceMotion) view.size = size;
-  if (W) { refreshView(); if (view.t >= 1) cacheGround(); }
-}
-function updateView(dt) {
-  if (view.t >= 1) return;
-  view.t = Math.min(1, view.t + dt / view.dur);
-  const k = view.t < 0.5 ? 4 * view.t * view.t * view.t : 1 - Math.pow(-2 * view.t + 2, 3) / 2;
-  view.size = view.from + (view.to - view.from) * k;
-  refreshView();
-  if (view.t >= 1) cacheGround();
+  // Fit the island, letting the outer ring of sea fall off the edge.
+  T = Math.min(W / (CFG.W - 0.9), H / (CFG.H - 0.9));
+  OX = (W - CFG.W * T) / 2; OY = (H - CFG.H * T) / 2;
+  paintGround();
 }
 
-function drawTree(t, grown, time) {
-  const E = cam.E;
-  ctx.fillStyle = COL.shadow;
-  if (grown < 0.12) {
-    ctx.beginPath(); ctx.ellipse(t.x + E, t.y + 1.5 * E, 5 * E, 3.5 * E, 0, 0, 7); ctx.fill();
-    ctx.fillStyle = COL.trunk; ctx.beginPath(); ctx.arc(t.x, t.y, 4 * E, 0, 7); ctx.fill();
-    ctx.fillStyle = COL.stumpTop; ctx.beginPath(); ctx.arc(t.x, t.y, 2.6 * E, 0, 7); ctx.fill();
-    return;
-  }
-  const R = (4.5 + 9.5 * grown) * E;
-  const sway = reduceMotion ? 0 : Math.sin(time * 1.3 + t.seed * 6.28) * 0.6 * E;
-  ctx.beginPath(); ctx.ellipse(t.x + 2 * E, t.y + 3 * E, R, R * 0.85, 0, 0, 7); ctx.fill();
-  ctx.fillStyle = t.tone[0]; ctx.beginPath(); ctx.arc(t.x + sway, t.y, R, 0, 7); ctx.fill();
-  ctx.fillStyle = t.tone[1]; ctx.beginPath(); ctx.arc(t.x + sway - R * 0.22, t.y - R * 0.24, R * 0.62, 0, 7); ctx.fill();
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.10)'; ctx.beginPath(); ctx.arc(t.x + sway - R * 0.34, t.y - R * 0.36, R * 0.28, 0, 7); ctx.fill();
+function drawTree(cx, cy, s, tone) {
+  const R = T * 0.36 * s;
+  ctx.fillStyle = COL.shadow; ctx.beginPath(); ctx.ellipse(cx + T * 0.05, cy + T * 0.08, R, R * 0.85, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = tone[0]; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.fill();
+  ctx.fillStyle = tone[1]; ctx.beginPath(); ctx.arc(cx - R * 0.22, cy - R * 0.24, R * 0.62, 0, 7); ctx.fill();
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.10)'; ctx.beginPath(); ctx.arc(cx - R * 0.34, cy - R * 0.36, R * 0.28, 0, 7); ctx.fill();
 }
-
-// A rock is an uneven seven-sided lump. Ore rocks carry bright flecks.
-function lump(x, y, R, seed) {
+function lump(cx, cy, R, seed) {
   ctx.beginPath();
   for (let i = 0; i < 7; i++) {
     const a = i / 7 * Math.PI * 2 + seed * 6.28;
-    const rr = R * (0.78 + 0.22 * Math.sin(seed * 40 + i * 2.4));
-    const px = x + Math.cos(a) * rr, py = y + Math.sin(a) * rr * 0.9;
+    const rr = R * (0.8 + 0.2 * Math.sin(seed * 40 + i * 2.4));
+    const px = cx + Math.cos(a) * rr, py = cy + Math.sin(a) * rr * 0.88;
     if (i) ctx.lineTo(px, py); else ctx.moveTo(px, py);
   }
   ctx.closePath();
 }
-function drawRock(t, grown) {
-  const E = cam.E, look = COL.rock[t.type] || COL.rock.stone;
-  if (grown < 0.12) {
-    ctx.fillStyle = look.base;
+function drawRock(cx, cy, s, type, seed) {
+  const [base, light, fleck] = COL.rock[type];
+  const R = T * 0.4 * s;
+  ctx.fillStyle = COL.shadow; lump(cx + T * 0.04, cy + T * 0.07, R, seed); ctx.fill();
+  ctx.fillStyle = base; lump(cx, cy, R, seed); ctx.fill();
+  ctx.fillStyle = light; lump(cx - R * 0.18, cy - R * 0.2, R * 0.58, seed + 0.3); ctx.fill();
+  if (fleck) {
+    ctx.fillStyle = fleck;
     for (let i = 0; i < 3; i++) {
-      ctx.beginPath(); ctx.arc(t.x + Math.cos(i * 2.1 + t.seed * 6) * 3.5 * E, t.y + Math.sin(i * 2.1 + t.seed * 6) * 2.5 * E, 1.7 * E, 0, 7); ctx.fill();
-    }
-    return;
-  }
-  const R = (5 + 8 * grown) * E;
-  ctx.fillStyle = COL.shadow; lump(t.x + 1.5 * E, t.y + 2.5 * E, R, t.seed); ctx.fill();
-  ctx.fillStyle = look.base; lump(t.x, t.y, R, t.seed); ctx.fill();
-  ctx.fillStyle = look.light; lump(t.x - R * 0.18, t.y - R * 0.2, R * 0.58, t.seed + 0.3); ctx.fill();
-  if (look.fleck) {
-    ctx.fillStyle = look.fleck;
-    for (let i = 0; i < 3; i++) {
-      const a = i * 2.2 + t.seed * 6.28, fx = t.x + Math.cos(a) * R * 0.42, fy = t.y + Math.sin(a) * R * 0.36;
-      ctx.beginPath();
-      if (t.type === 'crystal') {           // crystals are sharp shards, ore is round nuggets
-        ctx.moveTo(fx, fy - R * 0.42); ctx.lineTo(fx + R * 0.2, fy + R * 0.16); ctx.lineTo(fx - R * 0.2, fy + R * 0.16); ctx.closePath();
-      } else ctx.arc(fx, fy, R * 0.2, 0, 7);
-      ctx.fill();
+      const a = i * 2.2 + seed * 6.28;
+      ctx.beginPath(); ctx.arc(cx + Math.cos(a) * R * 0.45, cy + Math.sin(a) * R * 0.38, R * 0.17, 0, 7); ctx.fill();
     }
   }
 }
 
-// Where a train car sits, given how far behind the engine's nose its middle is (in screen px).
-function carSpot(behindPx) {
-  return trackPt(st.pos / trackLenOf(st) - behindPx / (cam.lp.perim * cam.S));
-}
-function withCar(p, draw) {
-  ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(Math.atan2(p.dy, p.dx)); draw(); ctx.restore();
+function drawBlocks() {
+  const now = clock;
+  for (let y = 0; y < CFG.H; y++) for (let x = 0; x < CFG.W; x++) {
+    const i = idx(x, y), tile = st.tiles[i];
+    if (tile.type === 'water' || tile.type === 'grass') continue;
+    let cx = tileX(x), cy = tileY(y);
+    if (tile.hp <= 0) {
+      // A cleared tile keeps a little mark of what stood there.
+      ctx.fillStyle = COL.dirt; ctx.beginPath(); ctx.ellipse(cx, cy, T * 0.26, T * 0.2, 0, 0, 7); ctx.fill();
+      continue;
+    }
+    const since = now - hitTimes[i];
+    if (since < 0.18 && !reduceMotion) { const k = 1 - since / 0.18; cx += Math.sin(since * 90) * T * 0.06 * k; }
+    const s = 0.55 + 0.45 * tile.hp / maxHpOf(tile.type, st.island);
+    const seed = ((x * 7 + y * 13) % 17) / 17;
+    if (tile.type === 'tree') drawTree(cx, cy, s, COL.leaves[(x * 3 + y * 5) % 3]);
+    else drawRock(cx, cy, s, tile.type, seed);
+  }
 }
 
+function trackPath(offset) {
+  const t = st.track, r = T * 0.45;
+  const x0 = tileX(t.x0) - offset, y0 = tileY(t.y0) - offset;
+  const w = (t.x1 - t.x0) * T + 2 * offset, h = (t.y1 - t.y0) * T + 2 * offset;
+  roundRect(ctx, x0, y0, w, h, Math.max(2, r + offset));
+}
+function drawTrack() {
+  ctx.lineJoin = 'round';
+  trackPath(0); ctx.strokeStyle = 'rgba(20, 30, 18, 0.25)'; ctx.lineWidth = T * 0.7; ctx.stroke();
+  trackPath(0); ctx.strokeStyle = COL.ballast; ctx.lineWidth = T * 0.6; ctx.stroke();
+  trackPath(0); ctx.strokeStyle = COL.sleeper; ctx.lineWidth = T * 0.46; ctx.setLineDash([T * 0.09, T * 0.17]); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.strokeStyle = COL.rail; ctx.lineWidth = Math.max(1, T * 0.06);
+  trackPath(T * 0.13); ctx.stroke();
+  trackPath(-T * 0.13); ctx.stroke();
+}
+
+function drawStation() {
+  const cx = tileX(CX), cy = tileY(CY), s = T;
+  ctx.fillStyle = COL.shadow; roundRect(ctx, cx - s * 0.32 + s * 0.05, cy - s * 0.26 + s * 0.07, s * 0.64, s * 0.52, s * 0.08); ctx.fill();
+  ctx.fillStyle = COL.station; roundRect(ctx, cx - s * 0.32, cy - s * 0.26, s * 0.64, s * 0.52, s * 0.08); ctx.fill();
+  ctx.fillStyle = COL.stationRoof; roundRect(ctx, cx - s * 0.26, cy - s * 0.2, s * 0.52, s * 0.4, s * 0.05); ctx.fill();
+  ctx.strokeStyle = COL.trim; ctx.lineWidth = Math.max(1, s * 0.06);
+  ctx.beginPath(); ctx.moveTo(cx - s * 0.26, cy); ctx.lineTo(cx + s * 0.26, cy); ctx.stroke();
+}
+
+// A car sits between two points a little ahead and behind, so it turns smoothly at corners.
+function carSpot(s) {
+  const a = pointAt(st.track, s + 0.38), b = pointAt(st.track, s - 0.38);
+  return { x: OX + ((a.x + b.x) / 2 + 0.5) * T, y: OY + ((a.y + b.y) / 2 + 0.5) * T, ang: Math.atan2(a.y - b.y, a.x - b.x) };
+}
 function drawTrain() {
-  const E = cam.E;
-  const engLen = 32 * E, wagLen = 28 * E, wide = 15 * E, gap = 4 * E;
-  const eng = carSpot(engLen / 2), wag = carSpot(engLen + gap + wagLen / 2);
-  const link = carSpot(engLen + gap / 2);
-
-  ctx.fillStyle = COL.iron;
-  ctx.beginPath(); ctx.arc(link.x, link.y, 2.2 * E, 0, 7); ctx.fill();
-
-  withCar(wag, () => {
-    ctx.fillStyle = COL.shadow; roundRect(ctx, -wagLen / 2 + 1.5 * E, -wide / 2 + 2.5 * E, wagLen, wide, 3 * E); ctx.fill();
-    ctx.fillStyle = COL.wagonDark; roundRect(ctx, -wagLen / 2, -wide / 2, wagLen, wide, 3 * E); ctx.fill();
-    ctx.fillStyle = COL.wagon; roundRect(ctx, -wagLen / 2, -wide / 2, wagLen, wide - 1.5 * E, 3 * E); ctx.fill();
-    const bedL = wagLen - 6 * E, bedW = wide - 6.5 * E, bedY = -wide / 2 + 2.5 * E;
-    ctx.fillStyle = COL.wagonBed; roundRect(ctx, -bedL / 2, bedY, bedL, bedW, 1.5 * E); ctx.fill();
-    // The load fills the bed from the back, one band per kind of cargo.
-    const cap = cargoOf(st);
-    let x = -bedL / 2;
-    for (const k of RES_KEYS) {
-      const len = bedL * Math.min(1, st.cargo[k] / cap);
-      if (len < 0.5) continue;
-      ctx.fillStyle = COL.load[k]; roundRect(ctx, x, bedY + 0.5 * E, len, bedW - E, 1.2 * E); ctx.fill();
-      x += len;
-    }
-  });
-
-  withCar(eng, () => {
-    ctx.fillStyle = COL.shadow; roundRect(ctx, -engLen / 2 + 1.5 * E, -wide / 2 + 2.5 * E, engLen, wide, 4 * E); ctx.fill();
-    ctx.fillStyle = COL.engineDark; roundRect(ctx, -engLen / 2, -wide / 2, engLen, wide, 4 * E); ctx.fill();
-    ctx.fillStyle = COL.engine; roundRect(ctx, -engLen / 2, -wide / 2, engLen, wide - 1.5 * E, 4 * E); ctx.fill();
-    // Cab at the back, boiler band, stack and a cutter bar out front.
-    ctx.fillStyle = COL.iron; roundRect(ctx, -engLen / 2 + 2 * E, -wide / 2 + 2 * E, 9 * E, wide - 5.5 * E, 2 * E); ctx.fill();
-    ctx.fillStyle = COL.ironLight; roundRect(ctx, -engLen / 2 + 3.5 * E, -wide / 2 + 3.5 * E, 6 * E, wide - 8.5 * E, 1 * E); ctx.fill();
-    ctx.fillStyle = COL.depotTrim; ctx.fillRect(-1 * E, -wide / 2 + 0.5 * E, 2 * E, wide - 2.5 * E);
-    ctx.fillStyle = COL.iron; ctx.beginPath(); ctx.arc(7.5 * E, -0.7 * E, 4 * E, 0, 7); ctx.fill();
-    ctx.fillStyle = '#12100e'; ctx.beginPath(); ctx.arc(7.5 * E, -0.7 * E, 2.3 * E, 0, 7); ctx.fill();
-    ctx.fillStyle = COL.iron; ctx.fillRect(engLen / 2 - 1.5 * E, -wide / 2 - 2.5 * E, 2.5 * E, wide + 3.5 * E);
-  });
-  return eng;
+  const len = T * 0.78, wide = T * 0.5;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.font = '700 ' + Math.max(9, Math.round(T * 0.38)) + 'px "Barlow Condensed", "Arial Narrow", sans-serif';
+  for (let c = st.carts.length - 1; c >= 0; c--) {
+    const p = carSpot(st.pos - (c + 1) * CFG.carLen), col = levelColor(st.carts[c]);
+    ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.ang);
+    ctx.fillStyle = COL.shadow; roundRect(ctx, -len / 2 + T * 0.04, -wide / 2 + T * 0.07, len, wide, T * 0.1); ctx.fill();
+    ctx.fillStyle = COL.iron; roundRect(ctx, -len / 2, -wide / 2, len, wide, T * 0.1); ctx.fill();
+    ctx.fillStyle = col; roundRect(ctx, -len / 2 + T * 0.04, -wide / 2 + T * 0.04, len - T * 0.08, wide - T * 0.1, T * 0.08); ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = '#1c2721'; ctx.fillText(String(st.carts[c]), p.x, p.y + T * 0.01);
+  }
+  const e = carSpot(st.pos);
+  ctx.save(); ctx.translate(e.x, e.y); ctx.rotate(e.ang);
+  ctx.fillStyle = COL.shadow; roundRect(ctx, -len / 2 + T * 0.04, -wide / 2 + T * 0.07, len, wide, T * 0.13); ctx.fill();
+  ctx.fillStyle = COL.engineDark; roundRect(ctx, -len / 2, -wide / 2, len, wide, T * 0.13); ctx.fill();
+  ctx.fillStyle = COL.engine; roundRect(ctx, -len / 2, -wide / 2, len, wide - T * 0.05, T * 0.13); ctx.fill();
+  ctx.fillStyle = COL.iron; roundRect(ctx, -len / 2 + T * 0.06, -wide / 2 + T * 0.07, T * 0.24, wide - T * 0.17, T * 0.05); ctx.fill();
+  ctx.fillStyle = COL.trim; ctx.fillRect(-T * 0.02, -wide / 2 + T * 0.02, T * 0.05, wide - T * 0.07);
+  ctx.fillStyle = COL.iron; ctx.beginPath(); ctx.arc(T * 0.18, -T * 0.02, T * 0.1, 0, 7); ctx.fill();
+  ctx.fillStyle = COL.iron; ctx.fillRect(len / 2 - T * 0.05, -wide / 2 - T * 0.06, T * 0.07, wide + T * 0.1);
+  ctx.restore();
+  return e;
 }
 
-function drawFrame(dt, time) {
-  const E = cam.E;
+function drawFrame(dt) {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  if (view.t < 1 || !groundCache) paintGround(ctx); else ctx.drawImage(groundCache, 0, 0, W, H);
-  const count = Math.min(nodePts.length, st.nodes.length);
-  for (let i = 0; i < count; i++) {
-    if (LEAVES[nodePts[i].type]) drawTree(nodePts[i], st.nodes[i], time); else drawRock(nodePts[i], st.nodes[i]);
-  }
+  ctx.drawImage(groundCache, 0, 0, W, H);
+  drawTrack();
+  drawStation();
+  drawBlocks();
   const eng = drawTrain();
 
   if (!reduceMotion) {
     puffClock -= dt * (1 + st.steam * 1.5);
     if (puffClock <= 0) {
-      puffClock = 0.22;
-      puffs.push({ x: eng.x + eng.dx * 7.5 * E, y: eng.y + eng.dy * 7.5 * E, age: 0, life: 1.1, drift: (Math.random() - 0.5) * 8 * E });
-    }
-    for (let i = puffs.length - 1; i >= 0; i--) {
-      const p = puffs[i];
-      p.age += dt;
-      if (p.age >= p.life) { puffs.splice(i, 1); continue; }
-      const k = p.age / p.life;
-      ctx.fillStyle = 'rgba(240, 238, 228, ' + (0.5 * (1 - k)).toFixed(3) + ')';
-      ctx.beginPath(); ctx.arc(p.x + p.drift * k, p.y - 14 * E * k, (3 + 6 * k) * E, 0, 7); ctx.fill();
+      puffClock = 0.25;
+      puffs.push({ x: eng.x, y: eng.y, age: 0, life: 1.0, drift: (Math.random() - 0.5) * T * 0.3 });
     }
   }
+  for (let i = puffs.length - 1; i >= 0; i--) {
+    const p = puffs[i];
+    p.age += dt;
+    if (p.age >= p.life) { puffs.splice(i, 1); continue; }
+    const k = p.age / p.life;
+    ctx.fillStyle = 'rgba(240, 238, 228, ' + (0.45 * (1 - k)).toFixed(3) + ')';
+    ctx.beginPath(); ctx.arc(p.x + p.drift * k, p.y - T * 0.5 * k, T * (0.1 + 0.2 * k), 0, 7); ctx.fill();
+  }
+  for (let i = chips.length - 1; i >= 0; i--) {
+    const p = chips[i];
+    p.age += dt;
+    if (p.age >= p.life) { chips.splice(i, 1); continue; }
+    p.x += p.vx * dt; p.y += p.vy * dt; p.vy += T * 6 * dt;
+    ctx.globalAlpha = 1 - p.age / p.life;
+    ctx.fillStyle = p.color; ctx.fillRect(p.x - T * 0.04, p.y - T * 0.04, T * 0.08, T * 0.08);
+  }
+  ctx.globalAlpha = 1;
 
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.lineJoin = 'round';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+  const px = Math.max(12, Math.round(T * 0.5));
+  ctx.font = '700 ' + px + 'px "Barlow Condensed", "Arial Narrow", sans-serif';
+  ctx.lineWidth = px / 5;
   for (let i = floats.length - 1; i >= 0; i--) {
     const f = floats[i];
     f.age += dt;
     if (f.age >= f.life) { floats.splice(i, 1); continue; }
     const k = f.age / f.life;
-    const px = Math.max(11, Math.round((f.big ? 17 : 15) * Math.max(E, 0.8 * U)));
-    ctx.font = '700 ' + px + 'px "Barlow Condensed", "Arial Narrow", sans-serif';
-    ctx.lineWidth = px / 5;
     ctx.globalAlpha = k < 0.7 ? 1 : (1 - k) / 0.3;
-    const y = Math.max(px, f.y - (reduceMotion ? 10 : 10 + 22 * k) * E);   // keep the number on the map
+    const y = Math.max(px, f.y - (reduceMotion ? 0.3 : 0.3 + 0.7 * k) * T);
     ctx.strokeStyle = 'rgba(20, 28, 24, 0.85)'; ctx.strokeText(f.text, f.x, y);
-    ctx.fillStyle = f.color; ctx.fillText(f.text, f.x, y);
+    ctx.fillStyle = COL.coin; ctx.fillText(f.text, f.x, y);
   }
   ctx.globalAlpha = 1;
 }
 
+const CHIP_COLORS = { tree: '#5c8c44', rock: '#9a998f', copper: '#d5793f', gold: '#f6cf4d' };
 function showEvents(events) {
+  let bump = false;
   for (const e of events) {
-    if (e.type === 'cut') {
-      const t = nodePts[e.node];
-      if (!t || e.amount < 0.05) continue;
-      floats.push({ x: t.x, y: t.y, text: '+' + fmt1(e.amount), color: COL.float[e.res], age: 0, life: 0.9 });
-    } else if (e.type === 'sell') {
-      const d = trackPt(0);
-      floats.push({ x: d.x - d.nx * 36 * cam.E, y: d.y - d.ny * 36 * cam.E - 12 * cam.E, text: '+' + fmt(e.amount) + ' coins', color: COL.coin, age: 0, life: 1.4, big: true });
-      el.coinsWrap.classList.remove('bump');
-      void el.coinsWrap.offsetWidth;
-      el.coinsWrap.classList.add('bump');
+    if (e.type === 'hit' || e.type === 'break') {
+      hitTimes[e.i] = clock;
+      const x = tileX(e.i % CFG.W), y = tileY(Math.floor(e.i / CFG.W));
+      if (!reduceMotion) {
+        const n = e.type === 'break' ? 6 : 2;
+        for (let k = 0; k < n; k++) chips.push({ x, y, vx: (Math.random() - 0.5) * T * 4, vy: -T * (1 + Math.random() * 2), age: 0, life: 0.5, color: CHIP_COLORS[e.block || st.tiles[e.i].type] || '#fff' });
+      }
+      if (e.type === 'break') { floats.push({ x, y, text: '+' + fmt(e.amount), age: 0, life: 1.0 }); bump = true; }
     }
   }
-  if (floats.length > 60) floats.splice(0, floats.length - 60);
+  if (chips.length > 120) chips.splice(0, chips.length - 120);
+  if (floats.length > 40) floats.splice(0, floats.length - 40);
+  if (bump) {
+    el.coinsWrap.classList.remove('bump');
+    void el.coinsWrap.offsetWidth;
+    el.coinsWrap.classList.add('bump');
+  }
 }
 
 // ---------------------------------------------------------------- time
@@ -1068,37 +922,31 @@ function awayText(sec) {
   const h = sec / 3600;
   return (h < 10 ? h.toFixed(1) : Math.round(h)) + ' h';
 }
-// Catch up on time spent with the page closed or in the background.
 function catchUp(seconds) {
   if (!(seconds > 0)) return;
   st.steam = 0;
-  const counted = Math.min(seconds, CFG.offlineCapSec);
-  const earned = advance(st, counted, null);
+  const earned = advance(st, Math.min(seconds, CFG.offlineCapSec), null);
   if (seconds >= 60 && earned >= 1) {
-    const capped = seconds > CFG.offlineCapSec ? ' The train keeps earning for up to ' + awayText(CFG.offlineCapSec) + ' while you are away.' : '';
+    const capped = seconds > CFG.offlineCapSec ? ' The train keeps working for up to ' + awayText(CFG.offlineCapSec) + ' while you are away.' : '';
     showToast('Away for ' + awayText(seconds) + '. The train earned <b>' + fmt(earned) + ' coins</b>.' + capped, 5000);
   }
 }
 
-let lastTick = Date.now();
-let lastSave = Date.now();
+let lastTick = Date.now(), lastSave = Date.now();
 const events = [];
 function frame() {
   const now = Date.now();
   const dt = (now - lastTick) / 1000;
   lastTick = now;
-  if (dt > 1) {
-    catchUp(dt);               // the page was asleep
-  } else if (dt > 0) {
+  if (dt > 1) catchUp(dt);
+  else if (dt > 0) {
     events.length = 0;
     advance(st, dt, events);
-    if (cam) showEvents(events);
+    if (groundCache) showEvents(events);
   }
-  if (cam) {
-    const shownDt = Math.min(Math.max(dt, 0), 0.1);
-    updateView(shownDt);
-    drawFrame(shownDt, now / 1000);
-  }
+  const shownDt = Math.min(Math.max(dt, 0), 0.1);
+  clock += shownDt;
+  if (groundCache) drawFrame(shownDt);
   updateHud();
   if (now - lastSave > 5000) { lastSave = now; saveState(); }
   requestAnimationFrame(frame);
@@ -1110,19 +958,24 @@ el.map.addEventListener('pointerdown', e => {
   addSteam(st);
   puffClock = 0;
 });
-for (const key of KEYS) {
-  upEls[key].btn.addEventListener('click', () => {
-    if (buy(st, key)) { updateHud(); saveState(); }
-  });
-}
-el.land.addEventListener('click', () => {
-  const blurb = nextLand(st) ? landBlurb(st.land + 1) : '';
-  if (!expand(st)) return;
-  floats.length = 0;
-  glideTo(LANDS[st.land].size);
-  showToast('The line now reaches <b>' + LANDS[st.land].name + '</b>. ' + blurb + '.', 4500);
-  updateHud();
-  saveState();
+el.buy.addEventListener('click', () => {
+  if (!buyCart(st)) return;
+  newSlot = st.carts.lastIndexOf(buyLevelOf(st));
+  updateHud(); saveState();
+});
+el.merge.addEventListener('click', () => {
+  const made = merge(st);
+  if (!made) return;
+  newSlot = st.carts.indexOf(made);
+  updateHud(); saveState();
+});
+el.sail.addEventListener('click', () => {
+  if (!sail(st)) return;
+  floats.length = 0; chips.length = 0;
+  hitTimes = new Float32Array(CFG.W * CFG.H);
+  paintGround();
+  showToast('Welcome to <b>Island ' + st.island + '</b>. Blocks here are tougher and worth ' + CFG.islandGrowth + '× more.', 4000);
+  updateHud(); saveState();
 });
 let resetTimer = 0;
 el.reset.addEventListener('click', () => {
@@ -1136,9 +989,9 @@ el.reset.addEventListener('click', () => {
   el.reset.classList.remove('armed');
   el.reset.textContent = 'Reset game';
   st = freshState();
-  floats.length = 0;
-  view.size = view.from = view.to = LANDS[0].size; view.t = 1;
-  if (W) { refreshView(); cacheGround(); }
+  floats.length = 0; chips.length = 0;
+  hitTimes = new Float32Array(CFG.W * CFG.H);
+  if (W) paintGround();
   saveState();
 });
 document.addEventListener('visibilitychange', () => { if (document.hidden) saveState(); });
@@ -1148,7 +1001,6 @@ window.addEventListener('pagehide', saveState);
 if (window.ResizeObserver) new ResizeObserver(resize).observe(el.map);
 else window.addEventListener('resize', resize);
 resize();
-if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (cam) cacheGround(); });
 if (st.lastSeen > 0) catchUp((Date.now() - st.lastSeen) / 1000);
 updateHud();
 requestAnimationFrame(frame);

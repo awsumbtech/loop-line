@@ -1,6 +1,6 @@
 // Lets the installed game open without a connection.
 // Online, it always fetches the newest files and keeps a copy; offline, it serves that copy.
-const CACHE = 'loopline-v1';
+const CACHE = 'loopline-v2';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', event => {
