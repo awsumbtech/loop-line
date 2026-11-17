@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#1c2721">
 <title>Loop Line</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Loop Line">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
@@ -224,7 +231,7 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
   </section>
 
   <footer class="foot">
-    <span>Loop Line · v0.2</span>
+    <span>Loop Line · v0.2.1</span>
     <button class="reset" type="button" id="reset">Reset game</button>
   </footer>
 </main>
@@ -1145,6 +1152,14 @@ if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if
 if (st.lastSeen > 0) catchUp((Date.now() - st.lastSeen) / 1000);
 updateHud();
 requestAnimationFrame(frame);
+
+// Offline support for the installed app (only where the browser allows it).
+try {
+  const local = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || local)) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+} catch (e) { /* not available here */ }
 })();
 </script>
 </body>
