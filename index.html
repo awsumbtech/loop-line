@@ -10,7 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
-  /* Layout: one phone-height column. Scoreboard on top, the map in the middle, a 2x2 workshop below. */
+  /* Layout: one phone-height column. Scoreboard on top, the map in the middle, the workshop below. */
   /* One visual world (a forest map at dusk), so a single theme by choice. */
   --panel: #1c2721;
   --panel-raised: #27352c;
@@ -49,10 +49,10 @@ body {
 
 /* Scoreboard */
 .hud {
-  padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+  padding: calc(10px + env(safe-area-inset-top)) 16px 8px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
 }
 .hud-main { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .coins {
@@ -78,9 +78,8 @@ body {
   font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums;
   margin-bottom: 4px;
 }
-.bar { height: 8px; border-radius: 4px; background: #131a16; overflow: hidden; }
-#cargoFill { height: 100%; width: 0; background: var(--wood); border-radius: 4px; }
-#cargoFill.full { background: var(--brass); }
+.bar { height: 8px; border-radius: 4px; background: #131a16; overflow: hidden; display: flex; }
+.bar > div { height: 100%; width: 0; flex: none; }
 .tip { margin: 0; font-size: 13px; line-height: 1.3; color: var(--muted); min-height: 1.3em; }
 
 /* Map */
@@ -98,7 +97,7 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
   padding: 4px 9px; border-radius: 6px; pointer-events: none;
   font-variant-numeric: tabular-nums;
 }
-.hint { left: 50%; top: 64%; transform: translate(-50%, -50%); max-width: 46%; text-align: center; line-height: 1.2; }
+.hint { left: 50%; top: 66%; transform: translate(-50%, -50%); max-width: 46%; text-align: center; line-height: 1.2; }
 .toast {
   position: absolute; left: 16px; right: 16px; top: 44px;
   background: rgba(20, 28, 24, 0.94); border: 1px solid var(--brass); border-radius: 10px;
@@ -109,34 +108,49 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
 
 /* Workshop */
 .shop { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px 16px 6px; }
-.up {
-  position: relative;
-  display: flex; flex-direction: column; gap: 3px;
-  min-height: 78px; padding: 9px 10px 9px 14px;
+.land, .up {
+  position: relative; overflow: hidden;
   text-align: left; color: var(--ink); font: inherit;
-  background: var(--panel-raised); border: 1px solid var(--line); border-radius: 10px;
-  cursor: pointer; overflow: hidden;
+  border: 1px solid var(--line); border-radius: 10px;
+  cursor: pointer;
+}
+.land {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  min-height: 56px; padding: 8px 12px 8px 14px;
+  /* The darker fill creeps across as coins approach the price. */
+  background: linear-gradient(90deg, #3a4f37 0, #3a4f37 var(--p, 0%), var(--panel-raised) var(--p, 0%));
+}
+.land.ready { border-color: var(--brass); }
+.land-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.land-name { font-family: var(--font-display); font-weight: 700; font-size: 18px; letter-spacing: 0.04em; text-transform: uppercase; line-height: 1.05; }
+.land-blurb { font-size: 13px; color: var(--muted); line-height: 1.25; }
+.up {
+  display: flex; flex-direction: column; gap: 3px;
+  min-height: 76px; padding: 9px 10px 9px 14px;
+  background: var(--panel-raised);
 }
 .up::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--stripe); }
 .up[data-key="speed"] { --stripe: var(--signal); }
 .up[data-key="cargo"] { --stripe: var(--brass); }
 .up[data-key="power"] { --stripe: var(--wood); }
 .up[data-key="regrow"] { --stripe: var(--leaf); }
-.up:active { transform: scale(0.98); }
-.up:focus-visible, .reset:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+.land:active, .up:active { transform: scale(0.98); }
+.land:focus-visible, .up:focus-visible, .reset:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
 .up-head { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; }
 .up-name { font-family: var(--font-display); font-weight: 700; font-size: 19px; letter-spacing: 0.04em; text-transform: uppercase; line-height: 1; }
 .up-lvl { font-family: var(--font-display); font-weight: 500; font-size: 14px; color: var(--muted); white-space: nowrap; }
 .up-stat { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; line-height: 1.25; }
 .up-stat b { color: var(--ink); font-weight: 500; }
 .up-cost {
-  margin-top: auto; display: flex; align-items: center; gap: 5px;
+  display: flex; align-items: center; gap: 5px;
   font-family: var(--font-display); font-weight: 600; font-size: 18px; line-height: 1;
-  font-variant-numeric: tabular-nums; color: var(--brass);
+  font-variant-numeric: tabular-nums; color: var(--brass); white-space: nowrap;
 }
-.up[aria-disabled="true"] { cursor: default; }
-.up[aria-disabled="true"] .up-cost { color: var(--muted); }
-.up[aria-disabled="true"] .coin { filter: grayscale(1) brightness(0.8); }
+.up .up-cost { margin-top: auto; }
+[aria-disabled="true"] { cursor: default; }
+[aria-disabled="true"] .up-cost { color: var(--muted); }
+[aria-disabled="true"] .coin { filter: grayscale(1) brightness(0.8); }
 .up.limit { border-color: var(--brass); }
 .up .flag {
   display: none;
@@ -153,14 +167,15 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
 .reset { font: inherit; color: var(--muted); background: none; border: 0; padding: 8px 0 8px 12px; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
 .reset.armed { color: var(--signal); font-weight: 600; }
 
-@media (max-height: 620px) {
+@media (max-height: 700px) {
   .coins { font-size: 32px; }
   .tip { display: none; }
-  .up { min-height: 68px; }
+  .up { min-height: 66px; }
+  .land { min-height: 48px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .coins.bump #coins { animation: none; }
-  .up:active { transform: none; }
+  .land:active, .up:active { transform: none; }
 }
 </style>
 </head>
@@ -172,40 +187,44 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
       <div class="rate"><b id="rate">0</b> coins / min</div>
     </div>
     <div>
-      <div class="cargo-label"><span>Wagon load</span><span id="cargoText">0 / 10 wood</span></div>
-      <div class="bar"><div id="cargoFill"></div></div>
+      <div class="cargo-label"><span>Wagon load</span><span id="cargoText">0 / 10</span></div>
+      <div class="bar" id="cargoBar"></div>
     </div>
     <p class="tip" id="tip"></p>
   </header>
 
   <div class="map" id="map">
-    <canvas id="c" aria-label="Map of the loop. The train cuts trees as it passes and sells wood at the depot."></canvas>
+    <canvas id="c" aria-label="Map of the loop. The train gathers wood, stone and ore as it passes and sells them at the depot."></canvas>
     <div class="chip" id="steam" hidden></div>
     <div class="chip hint" id="hint" hidden>Tap the map to stoke the engine</div>
     <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
   </div>
 
   <section class="shop" aria-label="Upgrades">
+    <button class="land" type="button" id="land">
+      <span class="land-text"><span class="land-name" id="landName"></span><span class="land-blurb" id="landBlurb"></span></span>
+      <span class="up-cost" id="landCostWrap"><span class="coin"></span><span id="landCost"></span></span>
+    </button>
     <button class="up" type="button" data-key="speed" id="up-speed">
-      <span class="up-head"><span class="up-name">Engine</span><span class="flag">Bottleneck</span><span class="up-lvl"></span></span>
-      <span class="up-stat"></span><span class="up-cost"><span class="coin"></span><span class="cost-n"></span></span>
+      <span class="up-head"><span class="up-name">Engine</span><span class="up-lvl"></span></span>
+      <span class="up-stat"></span><span class="up-cost"><span class="coin"></span><span class="cost-n"></span><span class="flag">Bottleneck</span></span>
     </button>
     <button class="up" type="button" data-key="cargo" id="up-cargo">
-      <span class="up-head"><span class="up-name">Wagon</span><span class="flag">Bottleneck</span><span class="up-lvl"></span></span>
-      <span class="up-stat"></span><span class="up-cost"><span class="coin"></span><span class="cost-n"></span></span>
+      <span class="up-head"><span class="up-name">Wagon</span><span class="up-lvl"></span></span>
+      <span class="up-stat"></span><span class="up-cost"><span class="coin"></span><span class="cost-n"></span><span class="flag">Bottleneck</span></span>
     </button>
     <button class="up" type="button" data-key="power" id="up-power">
-      <span class="up-head"><span class="up-name">Saw</span><span class="flag">Bottleneck</span><span class="up-lvl"></span></span>
-      <span class="up-stat"></span><span class="up-cost"><span class="coin"></span><span class="cost-n"></span></span>
+      <span class="up-head"><span class="up-name">Tools</span><span class="up-lvl"></span></span>
+      <span class="up-stat"></span><span class="up-cost"><span class="coin"></span><span class="cost-n"></span><span class="flag">Bottleneck</span></span>
     </button>
     <button class="up" type="button" data-key="regrow" id="up-regrow">
-      <span class="up-head"><span class="up-name">Forest</span><span class="flag">Bottleneck</span><span class="up-lvl"></span></span>
-      <span class="up-stat"></span><span class="up-cost"><span class="coin"></span><span class="cost-n"></span></span>
+      <span class="up-head"><span class="up-name">Growth</span><span class="up-lvl"></span></span>
+      <span class="up-stat"></span><span class="up-cost"><span class="coin"></span><span class="cost-n"></span><span class="flag">Bottleneck</span></span>
     </button>
   </section>
 
   <footer class="foot">
-    <span>Loop Line · v0.1</span>
+    <span>Loop Line · v0.2</span>
     <button class="reset" type="button" id="reset">Reset game</button>
   </footer>
 </main>
@@ -219,20 +238,17 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
 // drawing code, so it can be run and tested on its own (see test/logic.test.js).
 
 const CFG = {
-  trackLength: 1000,     // one lap, in track units
-  treeCount: 12,
-  depotAt: 0,            // where on the loop the depot sits
-  woodPrice: 2,          // coins per wood
-  baseSpeed: 50,         // track units per second (a 20 second lap)
-  baseCargo: 10,         // wood the wagon holds
-  basePower: 1,          // wood from one fully grown tree
-  baseRegrow: 10,        // seconds for a tree to grow back
+  baseSpeed: 50,         // track units per second (a 20 second lap on the first loop)
+  baseCargo: 10,         // units the wagon holds
+  basePower: 1,          // units from one fully grown tree or rock
+  baseRegrow: 10,        // seconds for a tree or rock to come back
   minRegrow: 1.5,
-  minCut: 0.05,          // trees smaller than this are left alone
+  minCut: 0.05,          // anything smaller than this is left alone
   steamPerTap: 0.25,     // each tap adds this much boost
   steamMax: 1,           // boost tops out at double speed
   steamDecay: 0.5,       // boost lost per second
   offlineCapSec: 3600,   // time away that still earns
+  rings: [310, 420, 530, 640, 750],   // distance from the depot where each richer ground begins
   upgrades: {
     speed:  { baseCost: 15, growth: 1.30 },
     cargo:  { baseCost: 10, growth: 1.25 },
@@ -242,18 +258,99 @@ const CFG = {
 };
 const KEYS = ['speed', 'cargo', 'power', 'regrow'];
 
+// What the train can gather, and what each unit sells for.
+// The ground gets richer in rings around the depot, in this order.
+const RES = {
+  wood:     { price: 2,  name: 'Wood' },
+  hardwood: { price: 4,  name: 'Hardwood' },
+  stone:    { price: 8,  name: 'Stone' },
+  iron:     { price: 16, name: 'Iron' },
+  gold:     { price: 32, name: 'Gold' },
+  crystal:  { price: 64, name: 'Crystal' },
+};
+const RES_KEYS = ['wood', 'hardwood', 'stone', 'iron', 'gold', 'crystal'];
+
+// Each land is a bigger loop. "size" multiplies the first loop, "nodes" is how
+// many trees and rocks stand along it, "cost" is the price to extend there.
+const LANDS = [
+  { name: 'Home Woods',   size: 1.0, nodes: 12, cost: 0 },
+  { name: 'Deep Woods',   size: 1.4, nodes: 18, cost: 150 },
+  { name: 'The Quarry',   size: 1.8, nodes: 24, cost: 1500 },
+  { name: 'Iron Ridge',   size: 2.2, nodes: 30, cost: 12000 },
+  { name: 'Gold Hills',   size: 2.6, nodes: 36, cost: 100000 },
+  { name: 'Crystal Peak', size: 3.0, nodes: 44, cost: 800000 },
+];
+const BASE_LAP = 1000;                                        // length of the first loop
+const BASE_R = 140;                                           // radius of its curved ends
+const BASE_HALF = (BASE_LAP - 2 * Math.PI * BASE_R) / 4;      // half of one straight side
+
+const mod = (a, n) => ((a % n) + n) % n;
+
+// The loop is a stadium shape: two straights joined by two half circles.
+// The depot sits at (0, 0) in the middle of the west straight, and the loop
+// grows east, north and south from there. at(f) gives the point a fraction f
+// of the way round, the direction of travel and the direction facing outward.
+function loopAt(size) {
+  const r = BASE_R * size, half = BASE_HALF * size, straight = 2 * half;
+  const perim = BASE_LAP * size;
+  function at(f) {
+    let d = mod(f, 1) * perim;
+    let x, y, dx, dy;
+    if (d < half) { x = 0; y = -d; dx = 0; dy = -1; }
+    else if ((d -= half) < Math.PI * r) {
+      const a = Math.PI + d / r;
+      x = r + r * Math.cos(a); y = -half + r * Math.sin(a); dx = -Math.sin(a); dy = Math.cos(a);
+    }
+    else if ((d -= Math.PI * r) < straight) { x = 2 * r; y = -half + d; dx = 0; dy = 1; }
+    else if ((d -= straight) < Math.PI * r) {
+      const a = d / r;
+      x = r + r * Math.cos(a); y = half + r * Math.sin(a); dx = -Math.sin(a); dy = Math.cos(a);
+    }
+    else { d -= Math.PI * r; x = 0; y = half - d; dx = 0; dy = -1; }
+    return { x, y, dx, dy, nx: dy, ny: -dx };
+  }
+  return { size, r, half, perim, at };
+}
+
+// The kind of ground at a spot decides what grows there. The farther from
+// the depot, the richer it is.
+function biomeAt(x, y) {
+  const d = Math.hypot(x, y);
+  let ring = 0;
+  while (ring < CFG.rings.length && d > CFG.rings[ring]) ring++;
+  return RES_KEYS[ring];
+}
+const emptyCargo = () => { const c = {}; for (const k of RES_KEYS) c[k] = 0; return c; };
+
+const nodeCache = [];
+function nodesFor(land) {
+  if (!nodeCache[land]) {
+    const lp = loopAt(LANDS[land].size), n = LANDS[land].nodes, list = [];
+    for (let i = 0; i < n; i++) {
+      const pos = (i + 0.5) / n * lp.perim;
+      const p = lp.at(pos / lp.perim);
+      list.push({ pos, type: biomeAt(p.x, p.y) });
+    }
+    nodeCache[land] = list;
+  }
+  return nodeCache[land];
+}
+function countsFor(land) {
+  const c = emptyCargo();
+  for (const n of nodesFor(land)) c[n.type] += 1;
+  return c;
+}
+
 function freshState() {
   return {
     coins: 0, totalEarned: 0, laps: 0,
-    pos: 0, cargo: 0, steam: 0, taps: 0,
+    pos: 0, steam: 0, taps: 0, land: 0,
+    cargo: emptyCargo(),
     levels: { speed: 0, cargo: 0, power: 0, regrow: 0 },
-    trees: Array.from({ length: CFG.treeCount }, () => 1),  // growth of each tree, 0 to 1
+    nodes: Array.from({ length: LANDS[0].nodes }, () => 1),   // growth of each tree or rock, 0 to 1
     lastSeen: 0,
   };
 }
-
-const mod = (a, n) => ((a % n) + n) % n;
-const treePos = i => (i + 0.5) / CFG.treeCount * CFG.trackLength;
 
 // What each upgrade level is worth.
 const speedAt  = lvl => CFG.baseSpeed * (1 + 0.1 * lvl);
@@ -261,11 +358,13 @@ const cargoAt  = lvl => CFG.baseCargo + 5 * lvl;
 const powerAt  = lvl => CFG.basePower + 0.5 * lvl;
 const regrowAt = lvl => Math.max(CFG.minRegrow, CFG.baseRegrow * Math.pow(0.93, lvl));
 
-const speedOf   = st => speedAt(st.levels.speed);
-const cargoOf   = st => cargoAt(st.levels.cargo);
-const powerOf   = st => powerAt(st.levels.power);
-const regrowOf  = st => regrowAt(st.levels.regrow);
-const lapTimeOf = st => CFG.trackLength / speedOf(st);
+const speedOf    = st => speedAt(st.levels.speed);
+const cargoOf    = st => cargoAt(st.levels.cargo);
+const powerOf    = st => powerAt(st.levels.power);
+const regrowOf   = st => regrowAt(st.levels.regrow);
+const trackLenOf = st => BASE_LAP * LANDS[st.land].size;
+const lapTimeOf  = st => trackLenOf(st) / speedOf(st);
+const cargoTotal = st => { let t = 0; for (const k of RES_KEYS) t += st.cargo[k]; return t; };
 
 function costOf(st, key) {
   const u = CFG.upgrades[key];
@@ -284,32 +383,50 @@ function buy(st, key) {
   return true;
 }
 
-function cutTree(st, i, events) {
-  const space = cargoOf(st) - st.cargo;
-  const grown = st.trees[i];
+// Extending the line into the next land.
+const nextLand = st => LANDS[st.land + 1] || null;
+function canExpand(st) {
+  const next = nextLand(st);
+  return !!next && st.coins >= next.cost;
+}
+function expand(st) {
+  if (!canExpand(st)) return false;
+  const lapShare = st.pos / trackLenOf(st);       // keep the train the same share of the way round
+  st.coins -= nextLand(st).cost;
+  st.land += 1;
+  st.pos = lapShare * trackLenOf(st);
+  st.nodes = Array.from({ length: LANDS[st.land].nodes }, () => 1);   // new land arrives fully grown
+  return true;
+}
+
+function harvest(st, i, events) {
+  const space = cargoOf(st) - cargoTotal(st);
+  const grown = st.nodes[i];
   if (space <= 1e-9 || grown < CFG.minCut) return;
   const power = powerOf(st);
   const take = Math.min(power * grown, space);
-  st.trees[i] = grown - take / power;   // a full wagon leaves part of the tree standing
-  st.cargo += take;
-  if (events) events.push({ type: 'cut', tree: i, amount: take });
+  const type = nodesFor(st.land)[i].type;
+  st.nodes[i] = grown - take / power;   // a full wagon leaves part of it standing
+  st.cargo[type] += take;
+  if (events) events.push({ type: 'cut', node: i, res: type, amount: take });
 }
 function sellCargo(st, events) {
   st.laps += 1;
-  if (st.cargo <= 0) return;
-  const gain = st.cargo * CFG.woodPrice;
+  let gain = 0;
+  for (const k of RES_KEYS) { gain += st.cargo[k] * RES[k].price; st.cargo[k] = 0; }
+  if (gain <= 0) return;
   st.coins += gain;
   st.totalEarned += gain;
-  st.cargo = 0;
   if (events) events.push({ type: 'sell', amount: gain });
 }
 
 // Move the game forward by a small slice of time (well under one lap).
 function step(st, dt, events) {
-  const L = CFG.trackLength;
+  const L = trackLenOf(st);
+  const nodes = nodesFor(st.land);
   const grow = dt / regrowOf(st);
-  for (let i = 0; i < st.trees.length; i++) {
-    if (st.trees[i] < 1) st.trees[i] = Math.min(1, st.trees[i] + grow);
+  for (let i = 0; i < st.nodes.length; i++) {
+    if (st.nodes[i] < 1) st.nodes[i] = Math.min(1, st.nodes[i] + grow);
   }
   const dist = speedOf(st) * (1 + st.steam) * dt;
   st.steam = Math.max(0, st.steam - CFG.steamDecay * dt);
@@ -317,15 +434,15 @@ function step(st, dt, events) {
   // Everything the engine passes in this slice, in the order it passes it.
   const from = st.pos;
   const hits = [];
-  for (let i = 0; i < st.trees.length; i++) {
-    const off = mod(treePos(i) - from, L);
+  for (let i = 0; i < nodes.length; i++) {
+    const off = mod(nodes[i].pos - from, L);
     if (off > 0 && off <= dist) hits.push([off, i]);
   }
-  const depotOff = mod(CFG.depotAt - from, L);
+  const depotOff = mod(-from, L);       // the depot is at position 0
   if (depotOff > 0 && depotOff <= dist) hits.push([depotOff, -1]);
   hits.sort((a, b) => a[0] - b[0]);
   for (const [, i] of hits) {
-    if (i >= 0) cutTree(st, i, events); else sellCargo(st, events);
+    if (i >= 0) harvest(st, i, events); else sellCargo(st, events);
   }
   st.pos = mod(from + dist, L);
 }
@@ -333,7 +450,7 @@ function step(st, dt, events) {
 // Move forward by any amount of time, in safe slices. Returns coins earned.
 function advance(st, seconds, events) {
   const before = st.totalEarned;
-  const slice = Math.min(0.1, 0.2 * CFG.trackLength / (speedOf(st) * (1 + CFG.steamMax)));
+  const slice = Math.min(0.1, 0.2 * BASE_LAP / (speedOf(st) * (1 + CFG.steamMax)));
   let left = seconds;
   while (left > 1e-9) {
     const dt = Math.min(slice, left);
@@ -348,45 +465,59 @@ function addSteam(st) {
   st.taps += 1;
 }
 
-// Wood the forest can offer on one lap, and what the wagon actually carries.
-function woodOfferedPerLap(st) {
+// What one lap offers and what the wagon carries home, filling it in the
+// order the train meets things.
+function lapHaul(st) {
   const regrownShare = Math.min(1, lapTimeOf(st) / regrowOf(st));
-  return CFG.treeCount * powerOf(st) * regrownShare;
+  const each = powerOf(st) * regrownShare;
+  let space = cargoOf(st), offered = 0, value = 0;
+  for (const n of nodesFor(st.land)) {
+    offered += each;
+    const take = Math.min(each, space);
+    space -= take;
+    value += take * RES[n.type].price;
+  }
+  return { offered, value };
 }
 function incomePerMin(st) {
-  const wood = Math.min(cargoOf(st), woodOfferedPerLap(st));
-  return wood * CFG.woodPrice * 60 / lapTimeOf(st);
+  return lapHaul(st).value * 60 / lapTimeOf(st);
 }
 // Which part is holding income back right now.
 function bottleneck(st) {
-  if (woodOfferedPerLap(st) > cargoOf(st) + 1e-9) return 'cargo';
+  if (lapHaul(st).offered > cargoOf(st) + 1e-9) return 'cargo';
   if (lapTimeOf(st) < regrowOf(st) - 1e-9 && !isMaxed(st, 'regrow')) return 'regrow';
   return 'none';
 }
 
 function serialize(st, now) {
   return JSON.stringify({
-    v: 1, coins: st.coins, totalEarned: st.totalEarned, laps: st.laps,
-    pos: st.pos, cargo: st.cargo, taps: st.taps,
-    levels: st.levels, trees: st.trees, lastSeen: now,
+    v: 2, coins: st.coins, totalEarned: st.totalEarned, laps: st.laps,
+    pos: st.pos, cargo: st.cargo, taps: st.taps, land: st.land,
+    levels: st.levels, nodes: st.nodes, lastSeen: now,
   });
 }
+// Reads a save, including saves from version 0.1 (wood only, one land).
 function deserialize(text) {
   const st = freshState();
   let raw;
   try { raw = JSON.parse(text); } catch (e) { return st; }
-  if (!raw || typeof raw !== 'object' || raw.v !== 1) return st;
+  if (!raw || typeof raw !== 'object' || (raw.v !== 1 && raw.v !== 2)) return st;
   const num = (x, lo, hi, dflt) => (typeof x === 'number' && isFinite(x)) ? Math.min(hi, Math.max(lo, x)) : dflt;
   st.coins = num(raw.coins, 0, 1e300, 0);
   st.totalEarned = num(raw.totalEarned, 0, 1e300, 0);
   st.laps = Math.floor(num(raw.laps, 0, 1e15, 0));
-  st.pos = mod(num(raw.pos, 0, 1e9, 0), CFG.trackLength);
   st.taps = Math.floor(num(raw.taps, 0, 1e15, 0));
+  st.land = Math.floor(num(raw.land, 0, LANDS.length - 1, 0));
+  st.pos = mod(num(raw.pos, 0, 1e9, 0), trackLenOf(st));
   for (const k of KEYS) st.levels[k] = Math.floor(num(raw.levels && raw.levels[k], 0, 5000, 0));
-  st.cargo = num(raw.cargo, 0, cargoOf(st), 0);
-  if (Array.isArray(raw.trees)) {
-    for (let i = 0; i < st.trees.length; i++) st.trees[i] = num(raw.trees[i], 0, 1, 1);
+  const cap = cargoOf(st);
+  if (typeof raw.cargo === 'number') st.cargo.wood = num(raw.cargo, 0, cap, 0);
+  else if (raw.cargo && typeof raw.cargo === 'object') {
+    let room = cap;
+    for (const k of RES_KEYS) { st.cargo[k] = num(raw.cargo[k], 0, room, 0); room -= st.cargo[k]; }
   }
+  const saved = Array.isArray(raw.nodes) ? raw.nodes : Array.isArray(raw.trees) ? raw.trees : [];
+  st.nodes = Array.from({ length: LANDS[st.land].nodes }, (_, i) => num(saved[i], 0, 1, 1));
   st.lastSeen = num(raw.lastSeen, 0, 1e15, 0);
   return st;
 }
@@ -400,12 +531,13 @@ function fmt(n) {
   const cut = Math.floor(n * Math.pow(10, digits) + 1e-9) / Math.pow(10, digits);
   return cut.toFixed(digits) + units[i];
 }
-const fmt1 = n => (Math.abs(n - Math.round(n)) < 0.05 ? String(Math.round(n)) : n.toFixed(1));
+const fmt1 = n => (n >= 1000 ? fmt(n) : Math.abs(n - Math.round(n)) < 0.05 ? String(Math.round(n)) : n.toFixed(1));
 
 const Logic = {
-  CFG, KEYS, freshState, treePos, speedAt, cargoAt, powerAt, regrowAt,
-  speedOf, cargoOf, powerOf, regrowOf, lapTimeOf, costOf, isMaxed, canBuy, buy,
-  step, advance, addSteam, woodOfferedPerLap, incomePerMin, bottleneck,
+  CFG, KEYS, RES, RES_KEYS, LANDS, BASE_LAP, loopAt, biomeAt, nodesFor, countsFor, freshState,
+  speedAt, cargoAt, powerAt, regrowAt, speedOf, cargoOf, powerOf, regrowOf, trackLenOf, lapTimeOf, cargoTotal,
+  costOf, isMaxed, canBuy, buy, nextLand, canExpand, expand,
+  step, advance, addSteam, lapHaul, incomePerMin, bottleneck,
   serialize, deserialize, fmt, fmt1,
 };
 // </logic>
@@ -431,11 +563,20 @@ let st = loadState();
 const $ = id => document.getElementById(id);
 const el = {
   coins: $('coins'), coinsWrap: $('coinsWrap'), rate: $('rate'),
-  cargoText: $('cargoText'), cargoFill: $('cargoFill'), tip: $('tip'),
+  cargoText: $('cargoText'), tip: $('tip'),
+  bars: {},
   map: $('map'), canvas: $('c'), steam: $('steam'), hint: $('hint'), toast: $('toast'),
+  land: $('land'), landName: $('landName'), landBlurb: $('landBlurb'), landCost: $('landCost'), landCostWrap: $('landCostWrap'),
   reset: $('reset'),
 };
 const upEls = {};
+const LOAD_COLOR = { wood: '#b5773c', hardwood: '#7d4423', stone: '#a9a79b', iron: '#8f5b45', gold: '#f0c64a', crystal: '#9fd8ea' };
+for (const k of RES_KEYS) {
+  const seg = document.createElement('div');
+  seg.style.background = LOAD_COLOR[k];
+  $('cargoBar').appendChild(seg);
+  el.bars[k] = seg;
+}
 for (const key of KEYS) {
   const b = $('up-' + key);
   upEls[key] = { btn: b, lvl: b.querySelector('.up-lvl'), stat: b.querySelector('.up-stat'), cost: b.querySelector('.cost-n') };
@@ -446,11 +587,13 @@ const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-mo
 const shown = new Map();
 function setText(node, text) { if (shown.get(node) !== text) { shown.set(node, text); node.textContent = text; } }
 function setHTML(node, html) { if (shown.get(node) !== html) { shown.set(node, html); node.innerHTML = html; } }
+function setAttr(node, name, value) { if (node.getAttribute(name) !== value) node.setAttribute(name, value); }
 
 const TIPS = {
+  land: 'You have enough coins to extend the line into new land.',
   cargo: 'The wagon fills before the lap ends. A bigger wagon earns more.',
-  regrow: 'Trees are still growing back when the train returns. A healthier forest earns more.',
-  none: 'The wagon has room to spare. A sharper saw or a faster engine earns more.',
+  regrow: 'Things are still growing back when the train returns. Faster growth earns more.',
+  none: 'The wagon has room to spare. Better tools or a faster engine earn more.',
 };
 const LIMIT_BUTTON = { cargo: 'cargo', regrow: 'regrow' };
 
@@ -458,33 +601,59 @@ function statLine(key) {
   const lvl = st.levels[key];
   if (isMaxed(st, key)) return 'Regrow <b>' + regrowAt(lvl).toFixed(1) + 's</b>';
   const pair = (a, b) => '<b>' + a + '</b> → <b>' + b + '</b>';
-  if (key === 'speed') return 'Lap ' + pair((CFG.trackLength / speedAt(lvl)).toFixed(1) + 's', (CFG.trackLength / speedAt(lvl + 1)).toFixed(1) + 's');
+  const L = trackLenOf(st);
+  if (key === 'speed') return 'Lap ' + pair((L / speedAt(lvl)).toFixed(1) + 's', (L / speedAt(lvl + 1)).toFixed(1) + 's');
   if (key === 'cargo') return 'Holds ' + pair(fmt(cargoAt(lvl)), fmt(cargoAt(lvl + 1)));
-  if (key === 'power') return 'Wood per tree ' + pair(fmt1(powerAt(lvl)), fmt1(powerAt(lvl + 1)));
+  if (key === 'power') return (st.land < 2 ? 'Wood per tree ' : 'Per tree or rock ') + pair(fmt1(powerAt(lvl)), fmt1(powerAt(lvl + 1)));
   return 'Regrow ' + pair(regrowAt(lvl).toFixed(1) + 's', regrowAt(lvl + 1).toFixed(1) + 's');
+}
+
+// What extending into a land adds, in the player's words.
+function landBlurb(land) {
+  const now = countsFor(land), before = countsFor(land - 1);
+  const more = LANDS[land].nodes - LANDS[land - 1].nodes;
+  for (const k of RES_KEYS) {
+    if (now[k] > 0 && before[k] === 0) return 'Adds ' + RES[k].name.toLowerCase() + ', worth ' + RES[k].price + ' coins each';
+  }
+  return 'A longer loop with ' + more + ' more stops';
 }
 
 function updateHud() {
   setText(el.coins, fmt(st.coins));
   setText(el.rate, fmt(incomePerMin(st)));
   const cap = cargoOf(st);
-  setText(el.cargoText, fmt1(Math.min(cap, st.cargo)) + ' / ' + fmt(cap) + ' wood');
-  const pct = Math.round(Math.min(1, st.cargo / cap) * 100);
-  if (shown.get(el.cargoFill) !== pct) {
-    shown.set(el.cargoFill, pct);
-    el.cargoFill.style.width = pct + '%';
-    el.cargoFill.classList.toggle('full', pct >= 100);
+  setText(el.cargoText, fmt1(Math.min(cap, cargoTotal(st))) + ' / ' + fmt(cap));
+  for (const k of RES_KEYS) {
+    const pct = (Math.round(Math.min(1, st.cargo[k] / cap) * 200) / 2) + '%';
+    if (shown.get(el.bars[k]) !== pct) { shown.set(el.bars[k], pct); el.bars[k].style.width = pct; }
   }
+
+  const next = nextLand(st);
+  const ready = canExpand(st);
+  if (next) {
+    setText(el.landName, 'Extend to ' + next.name);
+    setText(el.landBlurb, landBlurb(st.land + 1));
+    setText(el.landCost, fmt(next.cost));
+    const p = ready ? '0%' : Math.round(Math.min(1, st.coins / next.cost) * 100) + '%';
+    if (shown.get(el.land) !== p) { shown.set(el.land, p); el.land.style.setProperty('--p', p); }
+    if (el.landCostWrap.hidden) el.landCostWrap.hidden = false;
+  } else {
+    setText(el.landName, 'All land claimed');
+    setText(el.landBlurb, 'More land is on the way.');
+    if (!el.landCostWrap.hidden) el.landCostWrap.hidden = true;
+    if (shown.get(el.land) !== '0%') { shown.set(el.land, '0%'); el.land.style.setProperty('--p', '0%'); }
+  }
+  setAttr(el.land, 'aria-disabled', String(!ready));
+  el.land.classList.toggle('ready', ready);
+
   const limit = bottleneck(st);
-  setText(el.tip, TIPS[limit]);
+  setText(el.tip, ready ? TIPS.land : TIPS[limit]);
   for (const key of KEYS) {
     const u = upEls[key];
-    const maxed = isMaxed(st, key);
     setText(u.lvl, 'Lv ' + st.levels[key]);
     setHTML(u.stat, statLine(key));
-    setText(u.cost, maxed ? 'Max' : fmt(costOf(st, key)));
-    const off = String(!canBuy(st, key));
-    if (u.btn.getAttribute('aria-disabled') !== off) u.btn.setAttribute('aria-disabled', off);
+    setText(u.cost, isMaxed(st, key) ? 'Max' : fmt(costOf(st, key)));
+    setAttr(u.btn, 'aria-disabled', String(!canBuy(st, key)));
     u.btn.classList.toggle('limit', LIMIT_BUTTON[limit] === key);
   }
   if (st.steam > 0.02) {
@@ -508,18 +677,34 @@ function showToast(html, ms) {
 // ---------------------------------------------------------------- drawing
 const ctx = el.canvas.getContext('2d');
 const COL = {
-  ground: '#5d7a48', meadow: '#668450', speckA: '#6f8d55', speckB: '#506b3d',
+  land: { wood: '#5d7a48', hardwood: '#4c6b45', stone: '#8c897a', iron: '#8b6c57', gold: '#a3915a', crystal: '#7e8ca3' },
+  speck: {
+    wood: ['#6f8d55', '#506b3d'], hardwood: ['#5d7d52', '#3e5a39'], stone: ['#a3a091', '#74725f'],
+    iron: ['#a5836b', '#725645'], gold: ['#c0aa6a', '#877542'], crystal: ['#9aa7bd', '#667389'],
+  },
   ballast: '#8b8069', sleeper: '#5b4733', rail: '#2b2824',
   trunk: '#6b4a2b', stumpTop: '#c79a63', shadow: 'rgba(20, 30, 18, 0.28)',
+  rock: {
+    stone:   { base: '#6f6e68', light: '#9a998f', fleck: null },
+    iron:    { base: '#57463e', light: '#78625a', fleck: '#cf6a3d' },
+    gold:    { base: '#7d6f49', light: '#9a8a5a', fleck: '#f6cf4d' },
+    crystal: { base: '#55627a', light: '#7384a0', fleck: '#c9f1ff' },
+  },
   engine: '#c9452c', engineDark: '#8f2d1c', iron: '#2b2824', ironLight: '#57514a',
-  wagon: '#d1a13a', wagonDark: '#8a6a1f', wagonBed: '#3a2f22', log: '#b5773c', logEnd: '#deb078',
+  wagon: '#d1a13a', wagonDark: '#8a6a1f', wagonBed: '#3a2f22',
+  load: LOAD_COLOR,
   depotWall: '#7a4a32', depotRoof: '#3b2a22', depotTrim: '#e2a52e', platform: '#b9ad93',
-  wood: '#f0c58d', coin: '#f3bf4f',
+  float: { wood: '#f0c58d', hardwood: '#e9a877', stone: '#e4e2d6', iron: '#f0a585', gold: '#ffe07a', crystal: '#c9f1ff' }, coin: '#f3bf4f',
 };
-const LEAVES = [['#3f6b34', '#5c8c44'], ['#3a6638', '#55874a'], ['#476f2f', '#6a963f']];
+const LEAVES = {
+  wood: [['#3f6b34', '#5c8c44'], ['#3a6638', '#55874a'], ['#476f2f', '#6a963f']],
+  hardwood: [['#8a4a24', '#b96b2d'], ['#7c3f22', '#a85c2a'], ['#96582a', '#c47a34']],
+};
 
 let W = 0, H = 0, dpr = 1, U = 1;
-let track = null, groundCache = null;
+let cam = null, nodePts = [], groundCache = null;
+// The loop size on screen. It glides from "from" to "to" when the line is extended.
+const view = { size: LANDS[st.land].size, from: 1, to: 1, t: 1, dur: 1.8 };
 const floats = [], puffs = [];
 let puffClock = 0;
 
@@ -533,54 +718,67 @@ function rng(seed) {
   };
 }
 
-// The loop is a stadium shape: two straights joined by two half circles.
-// at(f) gives the spot a fraction f of the way round, with the direction of
-// travel (dx, dy) and the direction pointing away from the loop (nx, ny).
-function buildTrack() {
-  const tall = H >= W;
-  const w0 = tall ? W : H, h0 = tall ? H : W;
-  const margin = Math.min(72, Math.max(44, Math.min(W, H) * 0.16));
-  const w = Math.max(40, w0 - 2 * margin), h = Math.max(40, h0 - 2 * margin);
-  const r = Math.min(w, h) / 2, straight = Math.max(w, h) - 2 * r;
-  const cx = w0 / 2, cy = h0 / 2, half = straight / 2;
-  const perim = 2 * straight + 2 * Math.PI * r;
-  function at(f) {
-    let d = mod(f, 1) * perim;
-    let x, y, dx, dy;
-    if (d < half) { x = cx - r; y = cy - d; dx = 0; dy = -1; }
-    else if ((d -= half) < Math.PI * r) {
-      const a = Math.PI + d / r;
-      x = cx + r * Math.cos(a); y = cy - half + r * Math.sin(a); dx = -Math.sin(a); dy = Math.cos(a);
-    }
-    else if ((d -= Math.PI * r) < straight) { x = cx + r; y = cy - half + d; dx = 0; dy = 1; }
-    else if ((d -= straight) < Math.PI * r) {
-      const a = d / r;
-      x = cx + r * Math.cos(a); y = cy + half + r * Math.sin(a); dx = -Math.sin(a); dy = Math.cos(a);
-    }
-    else { d -= Math.PI * r; x = cx - r; y = cy + half - d; dx = 0; dy = -1; }
-    let nx = dy, ny = -dx;
-    if (!tall) { [x, y] = [y, x]; [dx, dy] = [dy, dx]; [nx, ny] = [ny, nx]; }
-    return { x, y, dx, dy, nx, ny };
+// Wavy borders between the rings of ground, so they do not look ruled.
+const ringEdge = (ring, angle) => CFG.rings[ring] + 10 * Math.sin(3 * angle + ring) + 7 * Math.sin(7 * angle + 2 * ring);
+function groundAt(x, y) {
+  const d = Math.hypot(x, y), a = Math.atan2(y, x);
+  let ring = 0;
+  while (ring < CFG.rings.length && d > ringEdge(ring, a)) ring++;
+  return RES_KEYS[ring];
+}
+
+// Small flecks scattered over the whole world, made once.
+const specks = (() => {
+  const r = rng(42), list = [];
+  const X0 = -700, X1 = 1500, Y0 = -1050, Y1 = 1050;
+  const n = Math.round((X1 - X0) * (Y1 - Y0) / 640);
+  for (let i = 0; i < n; i++) {
+    const x = X0 + r() * (X1 - X0), y = Y0 + r() * (Y1 - Y0);
+    list.push({ x, y, a: 1.2 + r() * 2.2, b: 0.8 + r() * 1.2, rot: r() * 3, alpha: 0.35 + r() * 0.4, color: COL.speck[groundAt(x, y)][r() < 0.5 ? 0 : 1] });
   }
-  const trees = [];
-  const pick = rng(7);
-  for (let i = 0; i < CFG.treeCount; i++) {
-    const p = at(treePos(i) / CFG.trackLength);
-    // Trees alternate sides of the track; the pair beside the depot stay outside to leave it room.
-    const inside = i % 2 === 1 && i !== CFG.treeCount - 1;
-    const off = (inside ? -28 : 30) * U;
-    trees.push({ x: p.x + p.nx * off, y: p.y + p.ny * off, tone: LEAVES[Math.floor(pick() * LEAVES.length)], sway: pick() });
-  }
-  const dp = at(CFG.depotAt / CFG.trackLength);
-  const depot = { p: dp, x: dp.x - dp.nx * 36 * U, y: dp.y - dp.ny * 36 * U };
-  return { at, perim, trees, depot };
+  return list;
+})();
+
+// The camera always fits the whole loop on screen. As the loop grows the map
+// zooms out; trains and trees shrink more slowly than the land so they stay readable.
+function computeCam(size) {
+  const lp = loopAt(size);
+  const tall = H >= W;                      // on a wide screen the world is drawn turned on its side
+  const sw = tall ? W : H, sh = tall ? H : W;
+  const fit = (l, pad) => Math.max(0.05, Math.min((sw - 2 * pad) / (2 * l.r), (sh - 2 * pad) / (2 * (l.half + l.r))));
+  const S0 = fit(loopAt(1), 52 * U);
+  let S = fit(lp, 52 * U), E = U;
+  for (let i = 0; i < 3; i++) { E = U * Math.pow(Math.min(1, S / S0), 0.6); S = fit(lp, 52 * E); }
+  return { lp, S, E, tall, sw, sh, ox: sw / 2 - lp.r * S, oy: sh / 2 };
+}
+function toScreen(wx, wy) {
+  const X = cam.ox + wx * cam.S, Y = cam.oy + wy * cam.S;
+  return cam.tall ? [X, Y] : [Y, X];
+}
+function trackPt(f) {
+  const p = cam.lp.at(f);
+  const s = toScreen(p.x, p.y);
+  return cam.tall
+    ? { x: s[0], y: s[1], dx: p.dx, dy: p.dy, nx: p.nx, ny: p.ny }
+    : { x: s[0], y: s[1], dx: p.dy, dy: p.dx, nx: p.ny, ny: p.nx };
+}
+
+function layoutNodes() {
+  const nodes = nodesFor(st.land), L = trackLenOf(st);
+  nodePts = nodes.map((n, i) => {
+    const p = trackPt(n.pos / L);
+    // Things alternate sides of the track; the pair beside the depot stay outside to leave it room.
+    const inside = i % 2 === 1 && i !== nodes.length - 1;
+    const off = (inside ? -28 : 30) * cam.E;
+    return { x: p.x + p.nx * off, y: p.y + p.ny * off, type: n.type, tone: (LEAVES[n.type] || LEAVES.wood)[(i * 7 + 3) % 3], seed: (i * 0.618) % 1 };
+  });
 }
 
 function tracePath(c, offset) {
   c.beginPath();
   const n = 240;
   for (let i = 0; i <= n; i++) {
-    const p = track.at(i / n);
+    const p = trackPt(i / n);
     const x = p.x + p.nx * offset, y = p.y + p.ny * offset;
     if (i === 0) c.moveTo(x, y); else c.lineTo(x, y);
   }
@@ -589,67 +787,86 @@ function tracePath(c, offset) {
 
 function roundRect(c, x, y, w, h, r) {
   c.beginPath();
+  r = Math.max(0, Math.min(r, w / 2, h / 2));
   if (c.roundRect) { c.roundRect(x, y, w, h, r); return; }
   c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
   c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
 }
 
-// Ground, track and depot never move, so they are painted once and reused.
-function paintGround() {
+// Ground, track and depot: everything that stays put.
+function paintGround(c) {
+  const E = cam.E, S = cam.S;
+  const wx0 = -cam.ox / S, wx1 = (cam.sw - cam.ox) / S, wy0 = -cam.oy / S, wy1 = (cam.sh - cam.oy) / S;
+  // Rings of ground around the depot, richest on the outside, painted from the outside in.
+  c.fillStyle = COL.land[RES_KEYS[CFG.rings.length]]; c.fillRect(0, 0, W, H);
+  for (let ring = CFG.rings.length - 1; ring >= 0; ring--) {
+    c.beginPath();
+    for (let i = 0; i < 120; i++) {
+      const a = i / 120 * Math.PI * 2, d = ringEdge(ring, a);
+      const s = toScreen(Math.cos(a) * d, Math.sin(a) * d);
+      if (i) c.lineTo(s[0], s[1]); else c.moveTo(s[0], s[1]);
+    }
+    c.closePath();
+    c.fillStyle = COL.land[RES_KEYS[ring]]; c.fill();
+  }
+  for (const k of specks) {
+    if (k.x < wx0 - 6 || k.x > wx1 + 6 || k.y < wy0 - 6 || k.y > wy1 + 6) continue;
+    const s = toScreen(k.x, k.y);
+    c.fillStyle = k.color; c.globalAlpha = k.alpha;
+    c.beginPath(); c.ellipse(s[0], s[1], k.a * E, k.b * E, k.rot, 0, 7); c.fill();
+  }
+  c.globalAlpha = 1;
+  tracePath(c, 0); c.fillStyle = 'rgba(255, 255, 255, 0.05)'; c.fill();
+
+  // Track bed, sleepers, then the two rails.
+  c.lineJoin = 'round';
+  tracePath(c, 0); c.strokeStyle = 'rgba(20, 30, 18, 0.22)'; c.lineWidth = 26 * E; c.stroke();
+  tracePath(c, 0); c.strokeStyle = COL.ballast; c.lineWidth = 21 * E; c.stroke();
+  tracePath(c, 0); c.strokeStyle = COL.sleeper; c.lineWidth = 16 * E; c.setLineDash([3 * E, 6.5 * E]); c.stroke();
+  c.setLineDash([]);
+  c.strokeStyle = COL.rail; c.lineWidth = Math.max(1, 2 * E);
+  tracePath(c, 4.5 * E); c.stroke();
+  tracePath(c, -4.5 * E); c.stroke();
+
+  // Depot: a platform beside the track and a shed behind it.
+  const d = trackPt(0), ang = Math.atan2(d.dy, d.dx);
+  const bx = d.x - d.nx * 36 * E, by = d.y - d.ny * 36 * E;
+  c.save();
+  c.translate(d.x - d.nx * 17 * E, d.y - d.ny * 17 * E); c.rotate(ang);
+  c.fillStyle = COL.platform; roundRect(c, -30 * E, -5 * E, 60 * E, 10 * E, 2 * E); c.fill();
+  c.restore();
+  c.save();
+  c.translate(bx, by); c.rotate(ang);
+  c.fillStyle = COL.shadow; roundRect(c, -22 * E, -10 * E, 48 * E, 26 * E, 3 * E); c.fill();
+  c.fillStyle = COL.depotWall; roundRect(c, -24 * E, -13 * E, 48 * E, 26 * E, 3 * E); c.fill();
+  c.fillStyle = COL.depotRoof; roundRect(c, -21 * E, -10 * E, 42 * E, 20 * E, 2 * E); c.fill();
+  c.strokeStyle = COL.depotTrim; c.lineWidth = 2 * E;
+  c.beginPath(); c.moveTo(-21 * E, 0); c.lineTo(21 * E, 0); c.stroke();
+  c.restore();
+  const ix = -d.nx, iy = -d.ny;   // pointing into the loop
+  c.font = '700 ' + Math.max(10, Math.round(13 * E)) + 'px "Barlow Condensed", "Arial Narrow", sans-serif';
+  c.fillStyle = 'rgba(242, 236, 217, 0.9)';
+  if (Math.abs(ix) > 0.5) {
+    c.textAlign = ix > 0 ? 'left' : 'right'; c.textBaseline = 'middle';
+    c.fillText('DEPOT', bx + ix * 20 * E, by);
+  } else {
+    c.textAlign = 'center'; c.textBaseline = iy > 0 ? 'top' : 'bottom';
+    c.fillText('DEPOT', bx, by + iy * 20 * E);
+  }
+}
+function cacheGround() {
   const cv = document.createElement('canvas');
   cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
   const c = cv.getContext('2d');
   c.scale(dpr, dpr);
-  c.fillStyle = COL.ground; c.fillRect(0, 0, W, H);
-  tracePath(c, 0); c.fillStyle = COL.meadow; c.fill();
-  const r = rng(42);
-  const count = Math.round(W * H / 650);
-  for (let i = 0; i < count; i++) {
-    c.fillStyle = r() < 0.5 ? COL.speckA : COL.speckB;
-    c.globalAlpha = 0.35 + r() * 0.4;
-    c.beginPath();
-    c.ellipse(r() * W, r() * H, (1.2 + r() * 2.2) * U, (0.8 + r() * 1.2) * U, r() * 3, 0, 7);
-    c.fill();
-  }
-  c.globalAlpha = 1;
-
-  // Track bed, sleepers, then the two rails.
-  c.lineJoin = 'round';
-  tracePath(c, 0); c.strokeStyle = 'rgba(20, 30, 18, 0.22)'; c.lineWidth = 26 * U; c.stroke();
-  tracePath(c, 0); c.strokeStyle = COL.ballast; c.lineWidth = 21 * U; c.stroke();
-  tracePath(c, 0); c.strokeStyle = COL.sleeper; c.lineWidth = 16 * U; c.setLineDash([3 * U, 6.5 * U]); c.stroke();
-  c.setLineDash([]);
-  c.strokeStyle = COL.rail; c.lineWidth = 2 * U;
-  tracePath(c, 4.5 * U); c.stroke();
-  tracePath(c, -4.5 * U); c.stroke();
-
-  // Depot: a platform beside the track and a shed behind it.
-  const d = track.depot, ang = Math.atan2(d.p.dy, d.p.dx);
-  c.save();
-  c.translate(d.p.x - d.p.nx * 17 * U, d.p.y - d.p.ny * 17 * U); c.rotate(ang);
-  c.fillStyle = COL.platform; roundRect(c, -30 * U, -5 * U, 60 * U, 10 * U, 2 * U); c.fill();
-  c.restore();
-  c.save();
-  c.translate(d.x, d.y); c.rotate(ang);
-  c.fillStyle = COL.shadow; roundRect(c, -24 * U + 2 * U, -13 * U + 3 * U, 48 * U, 26 * U, 3 * U); c.fill();
-  c.fillStyle = COL.depotWall; roundRect(c, -24 * U, -13 * U, 48 * U, 26 * U, 3 * U); c.fill();
-  c.fillStyle = COL.depotRoof; roundRect(c, -21 * U, -10 * U, 42 * U, 20 * U, 2 * U); c.fill();
-  c.strokeStyle = COL.depotTrim; c.lineWidth = 2 * U;
-  c.beginPath(); c.moveTo(-21 * U, 0); c.lineTo(21 * U, 0); c.stroke();
-  c.restore();
-  const ix = -d.p.nx, iy = -d.p.ny;   // pointing into the loop
-  c.font = '700 ' + Math.round(13 * U) + 'px "Barlow Condensed", "Arial Narrow", sans-serif';
-  c.fillStyle = 'rgba(242, 236, 217, 0.9)';
-  if (Math.abs(ix) > 0.5) {
-    c.textAlign = ix > 0 ? 'left' : 'right'; c.textBaseline = 'middle';
-    c.fillText('DEPOT', d.x + ix * 20 * U, d.y);
-  } else {
-    c.textAlign = 'center'; c.textBaseline = iy > 0 ? 'top' : 'bottom';
-    c.fillText('DEPOT', d.x, d.y + iy * 20 * U);
-  }
-  return cv;
+  paintGround(c);
+  groundCache = cv;
 }
 
+function refreshView() {
+  cam = computeCam(view.size);
+  layoutNodes();
+}
 function resize() {
   const box = el.map.getBoundingClientRect();
   if (box.width < 10 || box.height < 10) return;
@@ -657,86 +874,141 @@ function resize() {
   dpr = Math.min(3, window.devicePixelRatio || 1);
   el.canvas.width = Math.round(W * dpr); el.canvas.height = Math.round(H * dpr);
   U = Math.min(1.6, Math.max(0.8, Math.min(W, H) / 360));
-  track = buildTrack();
-  groundCache = paintGround();
+  refreshView();
+  cacheGround();
+}
+function glideTo(size) {
+  view.from = view.size; view.to = size; view.t = reduceMotion ? 1 : 0;
+  if (reduceMotion) view.size = size;
+  if (W) { refreshView(); if (view.t >= 1) cacheGround(); }
+}
+function updateView(dt) {
+  if (view.t >= 1) return;
+  view.t = Math.min(1, view.t + dt / view.dur);
+  const k = view.t < 0.5 ? 4 * view.t * view.t * view.t : 1 - Math.pow(-2 * view.t + 2, 3) / 2;
+  view.size = view.from + (view.to - view.from) * k;
+  refreshView();
+  if (view.t >= 1) cacheGround();
 }
 
 function drawTree(t, grown, time) {
+  const E = cam.E;
   ctx.fillStyle = COL.shadow;
   if (grown < 0.12) {
-    ctx.beginPath(); ctx.ellipse(t.x + U, t.y + 1.5 * U, 5 * U, 3.5 * U, 0, 0, 7); ctx.fill();
-    ctx.fillStyle = COL.trunk; ctx.beginPath(); ctx.arc(t.x, t.y, 4 * U, 0, 7); ctx.fill();
-    ctx.fillStyle = COL.stumpTop; ctx.beginPath(); ctx.arc(t.x, t.y, 2.6 * U, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(t.x + E, t.y + 1.5 * E, 5 * E, 3.5 * E, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = COL.trunk; ctx.beginPath(); ctx.arc(t.x, t.y, 4 * E, 0, 7); ctx.fill();
+    ctx.fillStyle = COL.stumpTop; ctx.beginPath(); ctx.arc(t.x, t.y, 2.6 * E, 0, 7); ctx.fill();
     return;
   }
-  const R = (4.5 + 9.5 * grown) * U;
-  const sway = reduceMotion ? 0 : Math.sin(time * 1.3 + t.sway * 6.28) * 0.6 * U;
-  ctx.beginPath(); ctx.ellipse(t.x + 2 * U, t.y + 3 * U, R, R * 0.85, 0, 0, 7); ctx.fill();
+  const R = (4.5 + 9.5 * grown) * E;
+  const sway = reduceMotion ? 0 : Math.sin(time * 1.3 + t.seed * 6.28) * 0.6 * E;
+  ctx.beginPath(); ctx.ellipse(t.x + 2 * E, t.y + 3 * E, R, R * 0.85, 0, 0, 7); ctx.fill();
   ctx.fillStyle = t.tone[0]; ctx.beginPath(); ctx.arc(t.x + sway, t.y, R, 0, 7); ctx.fill();
   ctx.fillStyle = t.tone[1]; ctx.beginPath(); ctx.arc(t.x + sway - R * 0.22, t.y - R * 0.24, R * 0.62, 0, 7); ctx.fill();
   ctx.fillStyle = 'rgba(255, 255, 255, 0.10)'; ctx.beginPath(); ctx.arc(t.x + sway - R * 0.34, t.y - R * 0.36, R * 0.28, 0, 7); ctx.fill();
 }
 
+// A rock is an uneven seven-sided lump. Ore rocks carry bright flecks.
+function lump(x, y, R, seed) {
+  ctx.beginPath();
+  for (let i = 0; i < 7; i++) {
+    const a = i / 7 * Math.PI * 2 + seed * 6.28;
+    const rr = R * (0.78 + 0.22 * Math.sin(seed * 40 + i * 2.4));
+    const px = x + Math.cos(a) * rr, py = y + Math.sin(a) * rr * 0.9;
+    if (i) ctx.lineTo(px, py); else ctx.moveTo(px, py);
+  }
+  ctx.closePath();
+}
+function drawRock(t, grown) {
+  const E = cam.E, look = COL.rock[t.type] || COL.rock.stone;
+  if (grown < 0.12) {
+    ctx.fillStyle = look.base;
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath(); ctx.arc(t.x + Math.cos(i * 2.1 + t.seed * 6) * 3.5 * E, t.y + Math.sin(i * 2.1 + t.seed * 6) * 2.5 * E, 1.7 * E, 0, 7); ctx.fill();
+    }
+    return;
+  }
+  const R = (5 + 8 * grown) * E;
+  ctx.fillStyle = COL.shadow; lump(t.x + 1.5 * E, t.y + 2.5 * E, R, t.seed); ctx.fill();
+  ctx.fillStyle = look.base; lump(t.x, t.y, R, t.seed); ctx.fill();
+  ctx.fillStyle = look.light; lump(t.x - R * 0.18, t.y - R * 0.2, R * 0.58, t.seed + 0.3); ctx.fill();
+  if (look.fleck) {
+    ctx.fillStyle = look.fleck;
+    for (let i = 0; i < 3; i++) {
+      const a = i * 2.2 + t.seed * 6.28, fx = t.x + Math.cos(a) * R * 0.42, fy = t.y + Math.sin(a) * R * 0.36;
+      ctx.beginPath();
+      if (t.type === 'crystal') {           // crystals are sharp shards, ore is round nuggets
+        ctx.moveTo(fx, fy - R * 0.42); ctx.lineTo(fx + R * 0.2, fy + R * 0.16); ctx.lineTo(fx - R * 0.2, fy + R * 0.16); ctx.closePath();
+      } else ctx.arc(fx, fy, R * 0.2, 0, 7);
+      ctx.fill();
+    }
+  }
+}
+
 // Where a train car sits, given how far behind the engine's nose its middle is (in screen px).
 function carSpot(behindPx) {
-  return track.at(st.pos / CFG.trackLength - behindPx / track.perim);
+  return trackPt(st.pos / trackLenOf(st) - behindPx / (cam.lp.perim * cam.S));
 }
 function withCar(p, draw) {
   ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(Math.atan2(p.dy, p.dx)); draw(); ctx.restore();
 }
 
 function drawTrain() {
-  const engLen = 32 * U, wagLen = 28 * U, wide = 15 * U, gap = 4 * U;
+  const E = cam.E;
+  const engLen = 32 * E, wagLen = 28 * E, wide = 15 * E, gap = 4 * E;
   const eng = carSpot(engLen / 2), wag = carSpot(engLen + gap + wagLen / 2);
   const link = carSpot(engLen + gap / 2);
 
   ctx.fillStyle = COL.iron;
-  ctx.beginPath(); ctx.arc(link.x, link.y, 2.2 * U, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.arc(link.x, link.y, 2.2 * E, 0, 7); ctx.fill();
 
   withCar(wag, () => {
-    ctx.fillStyle = COL.shadow; roundRect(ctx, -wagLen / 2 + 1.5 * U, -wide / 2 + 2.5 * U, wagLen, wide, 3 * U); ctx.fill();
-    ctx.fillStyle = COL.wagonDark; roundRect(ctx, -wagLen / 2, -wide / 2, wagLen, wide, 3 * U); ctx.fill();
-    ctx.fillStyle = COL.wagon; roundRect(ctx, -wagLen / 2, -wide / 2, wagLen, wide - 1.5 * U, 3 * U); ctx.fill();
-    const bedL = wagLen - 6 * U, bedW = wide - 6.5 * U;
-    ctx.fillStyle = COL.wagonBed; roundRect(ctx, -bedL / 2, -wide / 2 + 2.5 * U, bedL, bedW, 1.5 * U); ctx.fill();
-    // Logs fill the bed from the back as the wagon loads up.
-    const full = Math.min(1, st.cargo / cargoOf(st));
-    if (full > 0.02) {
-      const len = bedL * full, rows = 3, rowH = bedW / rows;
-      for (let i = 0; i < rows; i++) {
-        const y = -wide / 2 + 2.5 * U + i * rowH;
-        ctx.fillStyle = COL.log; roundRect(ctx, -bedL / 2, y + 0.4 * U, len, rowH - 0.8 * U, rowH / 2.4); ctx.fill();
-        ctx.fillStyle = COL.logEnd; ctx.beginPath(); ctx.arc(-bedL / 2 + len - rowH * 0.42, y + rowH / 2, rowH * 0.26, 0, 7); ctx.fill();
-      }
+    ctx.fillStyle = COL.shadow; roundRect(ctx, -wagLen / 2 + 1.5 * E, -wide / 2 + 2.5 * E, wagLen, wide, 3 * E); ctx.fill();
+    ctx.fillStyle = COL.wagonDark; roundRect(ctx, -wagLen / 2, -wide / 2, wagLen, wide, 3 * E); ctx.fill();
+    ctx.fillStyle = COL.wagon; roundRect(ctx, -wagLen / 2, -wide / 2, wagLen, wide - 1.5 * E, 3 * E); ctx.fill();
+    const bedL = wagLen - 6 * E, bedW = wide - 6.5 * E, bedY = -wide / 2 + 2.5 * E;
+    ctx.fillStyle = COL.wagonBed; roundRect(ctx, -bedL / 2, bedY, bedL, bedW, 1.5 * E); ctx.fill();
+    // The load fills the bed from the back, one band per kind of cargo.
+    const cap = cargoOf(st);
+    let x = -bedL / 2;
+    for (const k of RES_KEYS) {
+      const len = bedL * Math.min(1, st.cargo[k] / cap);
+      if (len < 0.5) continue;
+      ctx.fillStyle = COL.load[k]; roundRect(ctx, x, bedY + 0.5 * E, len, bedW - E, 1.2 * E); ctx.fill();
+      x += len;
     }
   });
 
   withCar(eng, () => {
-    ctx.fillStyle = COL.shadow; roundRect(ctx, -engLen / 2 + 1.5 * U, -wide / 2 + 2.5 * U, engLen, wide, 4 * U); ctx.fill();
-    ctx.fillStyle = COL.engineDark; roundRect(ctx, -engLen / 2, -wide / 2, engLen, wide, 4 * U); ctx.fill();
-    ctx.fillStyle = COL.engine; roundRect(ctx, -engLen / 2, -wide / 2, engLen, wide - 1.5 * U, 4 * U); ctx.fill();
-    // Cab at the back, boiler band, stack and a saw blade out front.
-    ctx.fillStyle = COL.iron; roundRect(ctx, -engLen / 2 + 2 * U, -wide / 2 + 2 * U, 9 * U, wide - 5.5 * U, 2 * U); ctx.fill();
-    ctx.fillStyle = COL.ironLight; roundRect(ctx, -engLen / 2 + 3.5 * U, -wide / 2 + 3.5 * U, 6 * U, wide - 8.5 * U, 1 * U); ctx.fill();
-    ctx.fillStyle = COL.depotTrim; ctx.fillRect(-1 * U, -wide / 2 + 0.5 * U, 2 * U, wide - 2.5 * U);
-    ctx.fillStyle = COL.iron; ctx.beginPath(); ctx.arc(7.5 * U, -0.7 * U, 4 * U, 0, 7); ctx.fill();
-    ctx.fillStyle = '#12100e'; ctx.beginPath(); ctx.arc(7.5 * U, -0.7 * U, 2.3 * U, 0, 7); ctx.fill();
-    ctx.fillStyle = COL.iron; ctx.fillRect(engLen / 2 - 1.5 * U, -wide / 2 - 2.5 * U, 2.5 * U, wide + 3.5 * U);
+    ctx.fillStyle = COL.shadow; roundRect(ctx, -engLen / 2 + 1.5 * E, -wide / 2 + 2.5 * E, engLen, wide, 4 * E); ctx.fill();
+    ctx.fillStyle = COL.engineDark; roundRect(ctx, -engLen / 2, -wide / 2, engLen, wide, 4 * E); ctx.fill();
+    ctx.fillStyle = COL.engine; roundRect(ctx, -engLen / 2, -wide / 2, engLen, wide - 1.5 * E, 4 * E); ctx.fill();
+    // Cab at the back, boiler band, stack and a cutter bar out front.
+    ctx.fillStyle = COL.iron; roundRect(ctx, -engLen / 2 + 2 * E, -wide / 2 + 2 * E, 9 * E, wide - 5.5 * E, 2 * E); ctx.fill();
+    ctx.fillStyle = COL.ironLight; roundRect(ctx, -engLen / 2 + 3.5 * E, -wide / 2 + 3.5 * E, 6 * E, wide - 8.5 * E, 1 * E); ctx.fill();
+    ctx.fillStyle = COL.depotTrim; ctx.fillRect(-1 * E, -wide / 2 + 0.5 * E, 2 * E, wide - 2.5 * E);
+    ctx.fillStyle = COL.iron; ctx.beginPath(); ctx.arc(7.5 * E, -0.7 * E, 4 * E, 0, 7); ctx.fill();
+    ctx.fillStyle = '#12100e'; ctx.beginPath(); ctx.arc(7.5 * E, -0.7 * E, 2.3 * E, 0, 7); ctx.fill();
+    ctx.fillStyle = COL.iron; ctx.fillRect(engLen / 2 - 1.5 * E, -wide / 2 - 2.5 * E, 2.5 * E, wide + 3.5 * E);
   });
   return eng;
 }
 
 function drawFrame(dt, time) {
+  const E = cam.E;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.drawImage(groundCache, 0, 0, W, H);
-  for (let i = 0; i < track.trees.length; i++) drawTree(track.trees[i], st.trees[i], time);
+  if (view.t < 1 || !groundCache) paintGround(ctx); else ctx.drawImage(groundCache, 0, 0, W, H);
+  const count = Math.min(nodePts.length, st.nodes.length);
+  for (let i = 0; i < count; i++) {
+    if (LEAVES[nodePts[i].type]) drawTree(nodePts[i], st.nodes[i], time); else drawRock(nodePts[i], st.nodes[i]);
+  }
   const eng = drawTrain();
 
   if (!reduceMotion) {
     puffClock -= dt * (1 + st.steam * 1.5);
     if (puffClock <= 0) {
       puffClock = 0.22;
-      puffs.push({ x: eng.x + eng.dx * 7.5 * U, y: eng.y + eng.dy * 7.5 * U, age: 0, life: 1.1, drift: (Math.random() - 0.5) * 8 * U });
+      puffs.push({ x: eng.x + eng.dx * 7.5 * E, y: eng.y + eng.dy * 7.5 * E, age: 0, life: 1.1, drift: (Math.random() - 0.5) * 8 * E });
     }
     for (let i = puffs.length - 1; i >= 0; i--) {
       const p = puffs[i];
@@ -744,20 +1016,22 @@ function drawFrame(dt, time) {
       if (p.age >= p.life) { puffs.splice(i, 1); continue; }
       const k = p.age / p.life;
       ctx.fillStyle = 'rgba(240, 238, 228, ' + (0.5 * (1 - k)).toFixed(3) + ')';
-      ctx.beginPath(); ctx.arc(p.x + p.drift * k, p.y - 14 * U * k, (3 + 6 * k) * U, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.arc(p.x + p.drift * k, p.y - 14 * E * k, (3 + 6 * k) * E, 0, 7); ctx.fill();
     }
   }
 
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.font = '700 ' + Math.round(16 * U) + 'px "Barlow Condensed", "Arial Narrow", sans-serif';
-  ctx.lineWidth = 3 * U; ctx.lineJoin = 'round';
+  ctx.lineJoin = 'round';
   for (let i = floats.length - 1; i >= 0; i--) {
     const f = floats[i];
     f.age += dt;
     if (f.age >= f.life) { floats.splice(i, 1); continue; }
     const k = f.age / f.life;
+    const px = Math.max(11, Math.round((f.big ? 17 : 15) * Math.max(E, 0.8 * U)));
+    ctx.font = '700 ' + px + 'px "Barlow Condensed", "Arial Narrow", sans-serif';
+    ctx.lineWidth = px / 5;
     ctx.globalAlpha = k < 0.7 ? 1 : (1 - k) / 0.3;
-    const y = Math.max(12 * U, f.y - (reduceMotion ? 10 : 10 + 22 * k) * U);   // keep the number on the map
+    const y = Math.max(px, f.y - (reduceMotion ? 10 : 10 + 22 * k) * E);   // keep the number on the map
     ctx.strokeStyle = 'rgba(20, 28, 24, 0.85)'; ctx.strokeText(f.text, f.x, y);
     ctx.fillStyle = f.color; ctx.fillText(f.text, f.x, y);
   }
@@ -767,18 +1041,18 @@ function drawFrame(dt, time) {
 function showEvents(events) {
   for (const e of events) {
     if (e.type === 'cut') {
-      if (e.amount < 0.05) continue;
-      const t = track.trees[e.tree];
-      floats.push({ x: t.x, y: t.y, text: '+' + fmt1(e.amount), color: COL.wood, age: 0, life: 0.9 });
+      const t = nodePts[e.node];
+      if (!t || e.amount < 0.05) continue;
+      floats.push({ x: t.x, y: t.y, text: '+' + fmt1(e.amount), color: COL.float[e.res], age: 0, life: 0.9 });
     } else if (e.type === 'sell') {
-      const d = track.depot;
-      floats.push({ x: d.x, y: d.y - 12 * U, text: '+' + fmt(e.amount) + ' coins', color: COL.coin, age: 0, life: 1.4 });
+      const d = trackPt(0);
+      floats.push({ x: d.x - d.nx * 36 * cam.E, y: d.y - d.ny * 36 * cam.E - 12 * cam.E, text: '+' + fmt(e.amount) + ' coins', color: COL.coin, age: 0, life: 1.4, big: true });
       el.coinsWrap.classList.remove('bump');
       void el.coinsWrap.offsetWidth;
       el.coinsWrap.classList.add('bump');
     }
   }
-  if (floats.length > 40) floats.splice(0, floats.length - 40);
+  if (floats.length > 60) floats.splice(0, floats.length - 60);
 }
 
 // ---------------------------------------------------------------- time
@@ -811,9 +1085,13 @@ function frame() {
   } else if (dt > 0) {
     events.length = 0;
     advance(st, dt, events);
-    if (track) showEvents(events);
+    if (cam) showEvents(events);
   }
-  if (track) drawFrame(Math.min(Math.max(dt, 0), 0.1), now / 1000);
+  if (cam) {
+    const shownDt = Math.min(Math.max(dt, 0), 0.1);
+    updateView(shownDt);
+    drawFrame(shownDt, now / 1000);
+  }
   updateHud();
   if (now - lastSave > 5000) { lastSave = now; saveState(); }
   requestAnimationFrame(frame);
@@ -830,6 +1108,15 @@ for (const key of KEYS) {
     if (buy(st, key)) { updateHud(); saveState(); }
   });
 }
+el.land.addEventListener('click', () => {
+  const blurb = nextLand(st) ? landBlurb(st.land + 1) : '';
+  if (!expand(st)) return;
+  floats.length = 0;
+  glideTo(LANDS[st.land].size);
+  showToast('The line now reaches <b>' + LANDS[st.land].name + '</b>. ' + blurb + '.', 4500);
+  updateHud();
+  saveState();
+});
 let resetTimer = 0;
 el.reset.addEventListener('click', () => {
   if (!el.reset.classList.contains('armed')) {
@@ -843,6 +1130,8 @@ el.reset.addEventListener('click', () => {
   el.reset.textContent = 'Reset game';
   st = freshState();
   floats.length = 0;
+  view.size = view.from = view.to = LANDS[0].size; view.t = 1;
+  if (W) { refreshView(); cacheGround(); }
   saveState();
 });
 document.addEventListener('visibilitychange', () => { if (document.hidden) saveState(); });
@@ -852,7 +1141,7 @@ window.addEventListener('pagehide', saveState);
 if (window.ResizeObserver) new ResizeObserver(resize).observe(el.map);
 else window.addEventListener('resize', resize);
 resize();
-if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (track) groundCache = paintGround(); });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (cam) cacheGround(); });
 if (st.lastSeen > 0) catchUp((Date.now() - st.lastSeen) / 1000);
 updateHud();
 requestAnimationFrame(frame);
