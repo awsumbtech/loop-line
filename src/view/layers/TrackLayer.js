@@ -1,71 +1,83 @@
-import { roundedLoop } from '../shapes.js';
 import { COLORS } from '../styles.js';
 
-// The rails. Redrawn only when the track changes, with a short fade from the
-// old shape to the new one so growth looks smooth.
+// The rails, drawn as smooth lines every frame. When the track changes shape
+// the old shape fades out under the new one, so growth looks smooth.
 export class TrackLayer {
-  constructor({ fadeSeconds = 0.35 } = {}) {
+  constructor({ fadeSeconds = 0.4 } = {}) {
     this.id = 'track';
     this.order = 10;
     this.fadeSeconds = fadeSeconds;
-    this.current = null;
-    this.previous = null;
-    this.fade = 1;
-    this.unsubscribe = null;
+    this.previous = null;   // { shape, alpha } of the track before the last change
+    this.shapes = new WeakMap();
+    this.lastTrack = null;
+    this.unsubscribers = [];
   }
 
   attach(renderer) {
-    this.unsubscribe = renderer.game.bus.on('track:changed', () => {
-      this.previous = this.current;
-      this.current = this.paint(renderer);
-      this.fade = renderer.reduceMotion || !this.previous ? 1 : 0;
-    });
+    const bus = renderer.game.bus;
+    this.lastTrack = renderer.game.track;
+    this.unsubscribers = [
+      bus.on('track:changed', e => {
+        if (this.lastTrack && !renderer.reduceMotion) this.previous = { track: this.lastTrack, alpha: 1 };
+        this.lastTrack = e.track;
+      }),
+      bus.on('island:started', () => { this.previous = null; }),
+    ];
   }
 
   detach() {
-    if (this.unsubscribe) this.unsubscribe();
+    this.unsubscribers.forEach(off => off());
   }
 
-  resize(renderer) {
-    this.current = this.paint(renderer);
-    this.previous = null;
-    this.fade = 1;
+  // The centre line plus the two rails, worked out once per track.
+  shapeOf(track) {
+    let shape = this.shapes.get(track);
+    if (shape) return shape;
+    const pts = track.points, n = pts.length;
+    const normals = pts.map((p, i) => {
+      const a = pts[(i - 1 + n) % n], b = pts[(i + 1) % n];
+      const dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy) || 1;
+      return { x: -dy / len, y: dx / len };
+    });
+    const offset = d => pts.map((p, i) => ({ x: p.x + normals[i].x * d, y: p.y + normals[i].y * d }));
+    shape = { centre: pts, railA: offset(0.15), railB: offset(-0.15) };
+    this.shapes.set(track, shape);
+    return shape;
   }
 
-  paint(renderer) {
-    if (!renderer.width) return null;
+  stroke(ctx, cam, pts, color, width, dash) {
+    ctx.beginPath();
+    pts.forEach((p, i) => { const x = cam.sx(p.x), y = cam.sy(p.y); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); });
+    ctx.closePath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.setLineDash(dash || []);
+    ctx.stroke();
+  }
+
+  drawTrack(ctx, renderer, track) {
     const cam = renderer.camera, T = cam.size;
-    const pts = renderer.game.track.points.map(p => cam.point(p));
-    const radius = T * 0.22;
-    const bed = renderer.makeBuffer(), c = bed.ctx;
-    c.lineJoin = 'round';
-    const stroke = (color, width, dash) => {
-      roundedLoop(c, pts, radius);
-      c.strokeStyle = color; c.lineWidth = width; c.setLineDash(dash || []); c.stroke();
-    };
-    stroke('rgba(20, 30, 18, 0.25)', T * 0.66);
-    stroke(COLORS.ballast, T * 0.56);
-    stroke(COLORS.sleeper, T * 0.44, [T * 0.09, T * 0.17]);
-    c.setLineDash([]);
-    // Two rails: a wide dark band with its middle cut away.
-    const rails = renderer.makeBuffer(), r = rails.ctx;
-    r.lineJoin = 'round';
-    roundedLoop(r, pts, radius); r.strokeStyle = COLORS.rail; r.lineWidth = T * 0.34; r.stroke();
-    r.globalCompositeOperation = 'destination-out';
-    roundedLoop(r, pts, radius); r.lineWidth = Math.max(T * 0.34 - 2 * Math.max(1, T * 0.05), 1); r.stroke();
-    c.drawImage(rails.canvas, 0, 0, renderer.width, renderer.height);
-    return bed;
+    const shape = this.shapeOf(track);
+    ctx.lineJoin = 'round';
+    this.stroke(ctx, cam, shape.centre, 'rgba(20, 30, 18, 0.25)', T * 0.66);
+    this.stroke(ctx, cam, shape.centre, COLORS.ballast, T * 0.56);
+    this.stroke(ctx, cam, shape.centre, COLORS.sleeper, T * 0.44, [T * 0.09, T * 0.17]);
+    const rail = Math.max(1, T * 0.05);
+    this.stroke(ctx, cam, shape.railA, COLORS.rail, rail);
+    this.stroke(ctx, cam, shape.railB, COLORS.rail, rail);
+    ctx.setLineDash([]);
   }
 
   draw(ctx, renderer, dt) {
-    if (!this.current) this.current = this.paint(renderer);
-    if (this.fade < 1 && this.previous) {
-      this.fade = Math.min(1, this.fade + dt / this.fadeSeconds);
-      ctx.globalAlpha = 1 - this.fade;
-      ctx.drawImage(this.previous.canvas, 0, 0, renderer.width, renderer.height);
-      ctx.globalAlpha = this.fade;
+    if (this.previous) {
+      this.previous.alpha -= dt / this.fadeSeconds;
+      if (this.previous.alpha <= 0) this.previous = null;
+      else {
+        ctx.globalAlpha = this.previous.alpha;
+        this.drawTrack(ctx, renderer, this.previous.track);
+        ctx.globalAlpha = 1;
+      }
     }
-    ctx.drawImage(this.current.canvas, 0, 0, renderer.width, renderer.height);
-    ctx.globalAlpha = 1;
+    this.drawTrack(ctx, renderer, renderer.game.track);
   }
 }

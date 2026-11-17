@@ -1,26 +1,32 @@
 import { formatNumber } from '../core/math.js';
+import { RateMeter } from '../core/RateMeter.js';
 import { levelColor } from '../view/styles.js';
 
-// The panels around the island: coins, progress, tips, the cart row and the
-// buttons. It reads the game and calls back for actions; it never changes
-// the game itself.
+// The panels around the island: coins, income, progress, tips, the cart row
+// and the buttons. It reads the game and calls back for actions; it never
+// changes the game itself.
 export class Hud {
   constructor(root, game, actions) {
     this.game = game;
     this.actions = actions;   // { buy, merge, sail, reset }
     this.shown = new Map();
     this.newSlot = -1;
+    this.income = new RateMeter(60);
+    this.clock = 0;
     const $ = id => root.getElementById(id);
     this.el = {
-      coins: $('coins'), coinsWrap: $('coinsWrap'), islandName: $('islandName'),
-      clearText: $('clearText'), clearFill: $('clearFill'), tip: $('tip'),
+      coins: $('coins'), coinsWrap: $('coinsWrap'), rate: $('rate'), islandName: $('islandName'),
+      progressLabel: $('progressLabel'), clearText: $('clearText'), clearFill: $('clearFill'), tip: $('tip'),
       steam: $('steam'), hint: $('hint'), toast: $('toast'), slots: $('slots'),
       buy: $('buy'), buyStat: $('buyStat'), buyCost: $('buyCost'),
-      merge: $('merge'), mergeStat: $('mergeStat'),
+      merge: $('merge'), mergeStat: $('mergeStat'), mergeNote: $('mergeNote'),
       sail: $('sail'), sailName: $('sailName'), sailStat: $('sailStat'), reset: $('reset'),
     };
     this.bindButtons();
-    game.bus.on('block:broken', () => this.bumpCoins());
+    const bus = game.bus;
+    bus.on('block:broken', () => this.bumpCoins());
+    bus.on('island:started', () => this.income.reset());
+    bus.on('ring:cleared', e => this.announceRing(e));
   }
 
   bindButtons() {
@@ -75,29 +81,46 @@ export class Hud {
     this.toastTimer = setTimeout(() => { t.hidden = true; }, ms);
   }
 
-  update() {
+  announceRing({ ring, rings, next }) {
+    if (ring >= rings) return;   // the island-cleared celebration covers the last ring
+    const ahead = next.length ? ' Next up: ' + next.map(b => b.toLowerCase()).join(', ') + '.' : '';
+    this.toast('<b>Ring ' + ring + ' of ' + rings + '</b> cleared.' + ahead, 4000);
+  }
+
+  // dt: seconds since the last update, for the income meter.
+  update(dt = 0) {
     const { game, el } = this;
     const { train, track, island, shop, wallet } = game;
+    this.clock += dt;
+    this.income.sample(this.clock, wallet.earned);
+
     this.setText(el.coins, formatNumber(wallet.coins));
+    const rate = this.income.perMinute();
+    this.setText(el.rate, rate === null ? '–' : formatNumber(rate));
     this.setText(el.islandName, 'Island ' + island.number);
 
     const done = game.canSail();
     const pct = done ? 100 : Math.min(99, Math.floor(island.clearedShare() * 100));
-    this.setText(el.clearText, pct + '%');
+    this.setText(el.clearText, pct + '% cleared');
     if (this.shown.get(el.clearFill) !== pct) { this.shown.set(el.clearFill, pct); el.clearFill.style.width = pct + '%'; }
+    const milestones = game.getSystem('milestones');
+    this.setText(el.progressLabel, milestones && milestones.rings
+      ? (milestones.ringsCleared >= milestones.rings ? 'All rings cleared' : 'Ring ' + (milestones.ringsCleared + 1) + ' of ' + milestones.rings)
+      : 'Island');
 
     this.renderSlots();
     const cap = train.capacity(track), full = train.carts.length >= cap;
     const canBuy = game.canBuyCart();
-    this.setHTML(el.buyStat, full ? 'Train is full (' + cap + ' carts)' : 'Adds a level <b>' + shop.levelFor(train) + '</b> cart');
+    this.setHTML(el.buyStat, full ? 'Train is full: merge to make room' : 'Adds a level <b>' + shop.levelFor(train) + '</b> cart');
     this.setText(el.buyCost, formatNumber(shop.price()));
     this.setAttr(el.buy, 'aria-disabled', String(!canBuy));
     el.buy.classList.toggle('ready', canBuy);
 
     const pair = train.mergeLevel();
     this.setHTML(el.mergeStat, pair ? 'Two level <b>' + pair + '</b> → one level <b>' + (pair + 1) + '</b>' : 'Needs two carts of the same level');
+    this.setText(el.mergeNote, pair ? 'Tap to merge' : 'No pair yet');
     this.setAttr(el.merge, 'aria-disabled', String(!pair));
-    el.merge.classList.toggle('ready', !!pair && full);
+    el.merge.classList.toggle('ready', !!pair);
 
     this.show(el.sail, done);
     if (done) {
@@ -108,13 +131,14 @@ export class Hud {
     let tip;
     if (done) tip = 'Island cleared. Sail on to the next one.';
     else if (full && pair) tip = 'The train is full. Merge two matching carts to make room.';
+    else if (pair && !canBuy) tip = 'Merge matching carts to hit harder.';
     else if (canBuy) tip = 'Another cart means more mining every lap.';
     else tip = 'Each block you clear lets the track grow a little.';
     this.setText(el.tip, tip);
 
     if (train.steam > 0.02) { this.show(el.steam, true); this.setText(el.steam, 'Speed ×' + (1 + train.steam).toFixed(2)); }
     else this.show(el.steam, false);
-    this.show(el.hint, game.stats.taps < 5);
+    this.show(el.hint, game.stats.taps < 3 && el.toast.hidden);
   }
 
   renderSlots() {

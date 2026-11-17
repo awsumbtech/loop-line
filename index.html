@@ -21,11 +21,14 @@
 <main class="game">
   <header class="hud">
     <div class="hud-main">
-      <div class="coins" id="coinsWrap" aria-label="Coins"><span class="coin"></span><span id="coins">0</span></div>
+      <div class="purse">
+        <div class="coins" id="coinsWrap" aria-label="Coins"><span class="coin"></span><span id="coins">0</span></div>
+        <div class="rate"><b id="rate">0</b> coins / min</div>
+      </div>
       <div class="island-name" id="islandName">Island 1</div>
     </div>
     <div>
-      <div class="progress-label"><span>Island cleared</span><span id="clearText">0%</span></div>
+      <div class="progress-label"><span id="progressLabel">Island cleared</span><span id="clearText">0%</span></div>
       <div class="bar"><div id="clearFill"></div></div>
     </div>
     <p class="tip" id="tip"></p>
@@ -56,13 +59,13 @@
       <button class="act" type="button" id="merge">
         <span class="act-name">Merge</span>
         <span class="act-stat" id="mergeStat"></span>
-        <span class="act-cost" id="mergeNote">Free</span>
+        <span class="act-cost" id="mergeNote">No pair yet</span>
       </button>
     </div>
   </section>
 
   <footer class="foot">
-    <span>Loop Line · v0.5</span>
+    <span>Loop Line · v0.6</span>
     <button class="reset" type="button" id="reset">Reset game</button>
   </footer>
 </main>

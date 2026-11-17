@@ -32,10 +32,12 @@ src/
                          IslandGenerator, Territory (cleared ground), Track
   train/                 Train, Cart
   economy/               Wallet, CartShop
-  systems/               TrainSystem, MiningSystem, RewardSystem, TerritorySystem
+  systems/               TrainSystem, MiningSystem, RewardSystem, TerritorySystem,
+                         MilestoneSystem (ring, best-level and island-cleared moments)
   save/                  SaveManager, storage (browser or memory)
-  view/                  Renderer, Camera, BlockPainters, styles, and one
-                         class per drawing layer in view/layers/
+  view/                  Renderer, Camera, framing (what the camera shows),
+                         BlockPainters, styles, and one class per drawing
+                         layer in view/layers/
   ui/                    Hud (panels and buttons), Input, pwa
   main.js                Wires everything together in the browser
 ```
@@ -44,7 +46,7 @@ Common changes:
 
 | To | Do this |
 | --- | --- |
-| Make islands longer or shorter | Change `islands.length` in `src/config.js` (0.8 is about 12 to 15 minutes; 2 is roughly twice as long) |
+| Make islands longer or shorter | Change `islands.length` in `src/config.js` (1.1 is about 20 to 25 minutes; double it for roughly twice as long) |
 | Tune speed, prices, island size | Edit `src/config.js` |
 | Change what grows where | Edit `RINGS` in `src/config.js`: one weighted mix per ring, ring 1 next to the start |
 | Add a block type | Add a row to `BLOCK_TYPES`, put its id in one or more `RINGS` mixes, and optionally a style in `view/styles.js` (unstyled blocks use a fallback look) |
@@ -52,7 +54,10 @@ Common changes:
 | Turn behaviour off | `game.removeSystem('mining')`, for example |
 | Change how islands are laid out | Subclass or replace `IslandGenerator` and pass it to `new Game({ generator })` |
 | Add something to the screen | Write a layer with `draw(ctx, renderer, dt)` and `renderer.addLayer()` |
+| Change what the camera shows | Pass a framing to the Renderer: `GroundFraming` (zooms out as the ground grows) or `IslandFraming` (always the whole island) |
 | Save new state | `game.addPart('name', { save, load })`; old saves without it still load |
 
-Events on `game.bus`: `block:hit`, `block:broken`, `track:changed`,
-`island:started`, `coins:changed`.
+Events on `game.bus` (see `src/core/EventBus.js` for what each carries):
+`block:hit`, `block:broken`, `ground:grew`, `track:changed`,
+`island:started`, `island:cleared`, `ring:cleared`, `cart:bought`,
+`cart:merged`, `level:best`, `coins:changed`, `game:restored`.

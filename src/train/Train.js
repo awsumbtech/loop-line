@@ -8,8 +8,9 @@ export class Train {
     this.config = config;
     this.carts = levels.map(level => new Cart(level));
     this.pos = 0;            // the engine's position on the track
+    this.travel = 0;         // distance run since the track last changed; never wraps
     this.steam = 0;          // extra speed from tapping, 0 to steam.max
-    this.lastMove = { from: 0, dist: 0 };
+    this.lastMove = { from: 0, to: 0 };
     this.sort();
   }
 
@@ -19,8 +20,17 @@ export class Train {
   move(dt, track) {
     const dist = this.speed * dt;
     this.steam = Math.max(0, this.steam - this.config.steam.decayPerSecond * dt);
-    this.lastMove = { from: this.pos, dist };
-    this.pos = mod(this.pos + dist, track.length);
+    const from = this.travel;
+    this.travel += dist;
+    this.lastMove = { from, to: this.travel };
+    this.pos = mod(this.travel, track.length);
+  }
+
+  // Puts the engine at a position on a (new) track.
+  placeAt(s) {
+    this.pos = s;
+    this.travel = s;
+    this.lastMove = { from: s, to: s };
   }
 
   boost() {
@@ -83,6 +93,6 @@ export class Train {
       const levels = data.levels.filter(isNum).map(l => clamp(Math.floor(l), 1, 60)).slice(0, this.capacity(track));
       if (levels.length) { this.carts = levels.map(l => new Cart(l)); this.sort(); }
     }
-    if (isNum(data.pos)) this.pos = mod(data.pos, track.length);
+    if (isNum(data.pos)) this.placeAt(mod(data.pos, track.length));
   }
 }

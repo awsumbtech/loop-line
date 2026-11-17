@@ -20,13 +20,13 @@ export const CONFIG = {
   },
   steam: { perTap: 0.25, max: 1, decayPerSecond: 0.5 },
   carts: { powerGrowth: 2.2 },   // a level n cart hits for powerGrowth^(n-1), rounded
-  shop: { baseCost: 10, costGrowth: 1.2, levelsBelowBest: 1 },
+  shop: { baseCost: 15, costGrowth: 1.2, levelsBelowBest: 1 },
   islands: {
-    length: 0.8,             // THE knob for island length: every block's hits are multiplied by this. 0.8 is about 12-15 min
+    length: 1.1,             // THE knob for island length: every block's hits are multiplied by this. 1.1 is about 20-25 min
     hpGrowth: 1.15,          // each new island's blocks take this much more hitting...
     valueGrowth: 1.15,       // ...and pay this much more
   },
-  track: { inset: 0.3 },     // how far inside the cleared ground the track runs, in tiles
+  track: { inset: 0.3, cornerRadius: 0.45 },   // how far inside the cleared ground the track runs, and how round its bends are, in tiles
   offline: { capSeconds: 3600 },
   save: { key: 'loopline.v5', version: 5, retiredKeys: ['loopline.save.v1', 'loopline.island.v1', 'loopline.v4'] },
 };

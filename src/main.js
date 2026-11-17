@@ -10,6 +10,8 @@ import { Input } from './ui/Input.js';
 import { registerServiceWorker } from './ui/pwa.js';
 import { BlockPainters } from './view/BlockPainters.js';
 import { Renderer } from './view/Renderer.js';
+import { GroundFraming } from './view/framing.js';
+import { CelebrationLayer } from './view/layers/CelebrationLayer.js';
 import { BlockLayer } from './view/layers/BlockLayer.js';
 import { EffectsLayer } from './view/layers/EffectsLayer.js';
 import { GroundLayer } from './view/layers/GroundLayer.js';
@@ -23,9 +25,10 @@ const savedAt = saves.load(game);
 
 const reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 const map = document.getElementById('map');
-const renderer = new Renderer(document.getElementById('c'), game, { reduceMotion });
+// GroundFraming starts close and zooms out as the ground grows; swap in IslandFraming to always show the whole island.
+const renderer = new Renderer(document.getElementById('c'), game, { reduceMotion, framing: new GroundFraming() });
 const painters = new BlockPainters();
-[new GroundLayer(), new TrackLayer(), new StationLayer(), new BlockLayer(painters), new TrainLayer(), new EffectsLayer(painters)]
+[new GroundLayer(), new TrackLayer(), new StationLayer(), new BlockLayer(painters), new TrainLayer(), new EffectsLayer(painters), new CelebrationLayer()]
   .forEach(layer => renderer.addLayer(layer));
 
 const save = () => saves.save(game);
@@ -68,7 +71,7 @@ function frame() {
   if (dt > 1) catchUp(dt);            // the page was asleep
   else if (dt > 0) game.advance(dt);
   renderer.render(Math.min(Math.max(dt, 0), 0.1));
-  hud.update();
+  hud.update(Math.min(Math.max(dt, 0), 1));
   if (now - lastSave > 5000) { lastSave = now; save(); }
   requestAnimationFrame(frame);
 }

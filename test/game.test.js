@@ -10,6 +10,9 @@ import { IslandGenerator } from '../src/world/IslandGenerator.js';
 import { Territory } from '../src/world/Territory.js';
 import { Track } from '../src/world/Track.js';
 import { BlockPainters } from '../src/view/BlockPainters.js';
+import { Camera } from '../src/view/Camera.js';
+import { GroundFraming, IslandFraming } from '../src/view/framing.js';
+import { RateMeter } from '../src/core/RateMeter.js';
 
 let passed = 0;
 function test(name, fn) { fn(); passed++; console.log('ok  - ' + name); }
@@ -63,7 +66,7 @@ test('a cleared block joins the ground and the track bends around it', () => {
   g.rebuildTrack();
   assert(g.territory.has(tile.x, tile.y));
   assert.strictEqual(g.territory.size, 10);
-  near(g.track.length, before + 2, 0.5, 'one tile adds about two tiles of track');
+  assert(g.track.length > before + 1 && g.track.length < before + 2.5, 'one tile adds up to about two tiles of track');
   assert(g.track.valid);
 });
 
@@ -87,7 +90,7 @@ test('ground never gets a hole or a corner-only join', () => {
 
 test('the train stays in place when the track grows', () => {
   const g = new Game();
-  g.train.pos = 4.3;
+  g.train.placeAt(4.3);
   const before = g.track.pointAt(g.train.pos);
   g.island.tiles[g.track.spots[0].tile].hp = 0;
   g.territory.grow();
@@ -131,7 +134,8 @@ test('carts cost more each time and stop when the train is full', () => {
   const prices = [];
   while (g.canBuyCart()) { prices.push(g.shop.price()); g.buyCart(); }
   assert.strictEqual(g.train.carts.length, g.train.capacity(g.track));
-  assert.deepStrictEqual(prices.slice(0, 4), [10, 12, 15, 18]);   // 10 × 1.2 each time, rounded up
+  const { baseCost, costGrowth } = CONFIG.shop;
+  assert.deepStrictEqual(prices.slice(0, 4), [0, 1, 2, 3].map(n => Math.ceil(baseCost * Math.pow(costGrowth, n))));
 });
 
 test('merging joins the lowest matching pair, strongest carts in front', () => {
@@ -160,7 +164,7 @@ test('sailing starts the next island fresh', () => {
   assert.strictEqual(g.island.number, 2);
   assert.strictEqual(g.wallet.coins, 0);
   assert.deepStrictEqual(g.train.levels, [1]);
-  assert.strictEqual(g.shop.price(), 10);
+  assert.strictEqual(g.shop.price(), CONFIG.shop.baseCost);
   assert.strictEqual(g.territory.size, 9);
   const tree = new BlockCatalog(BLOCK_TYPES).get('tree');
   near(tree.hpOn(2, CONFIG.islands), 3 * CONFIG.islands.length * CONFIG.islands.hpGrowth, 1e-9);
@@ -286,6 +290,62 @@ test('a save part can be removed or added', () => {
   const b = new Game();
   saves.load(b);
   near(b.wallet.coins, a.wallet.coins, 1e-9);
+});
+
+// ---------------------------------------------------------------- moments
+test('milestones: rings, best levels and a cleared island are announced once each', () => {
+  const g = new Game();
+  const seen = { ring: [], best: [], cleared: 0, grew: 0, bought: 0, merged: 0 };
+  g.bus.on('ring:cleared', e => seen.ring.push(e.ring));
+  g.bus.on('level:best', e => seen.best.push(e.level));
+  g.bus.on('island:cleared', () => seen.cleared++);
+  g.bus.on('ground:grew', e => { seen.grew += e.tiles.length; });
+  g.bus.on('cart:bought', () => seen.bought++);
+  g.bus.on('cart:merged', () => seen.merged++);
+  let t = 0;
+  while (!g.canSail() && t < 3600) { g.advance(1); t++; autoplay(g); }
+  g.advance(30);
+  const rings = g.getSystem('milestones').rings;
+  assert.deepStrictEqual(seen.ring, Array.from({ length: rings }, (_, i) => i + 1), 'each ring once, in order');
+  assert.strictEqual(g.getSystem('milestones').ringsCleared, rings);
+  assert.strictEqual(seen.cleared, 1);
+  assert(seen.best.length >= 4 && seen.best.every((l, i) => i === 0 || l > seen.best[i - 1]));
+  assert(seen.grew > 300 && seen.bought > 10 && seen.merged > 10);
+});
+
+test('removing the milestone system just removes the moments', () => {
+  const g = new Game();
+  g.removeSystem('milestones');
+  let rings = 0;
+  g.bus.on('ring:cleared', () => rings++);
+  for (let t = 0; t < 300; t++) { g.advance(1); autoplay(g); }
+  assert.strictEqual(rings, 0);
+  assert(g.territory.size > 9);
+});
+
+test('the camera starts close on the ground and ends showing the whole island', () => {
+  const g = new Game();
+  const view = { game: g, width: 390, height: 530, camera: new Camera(), reduceMotion: false };
+  const framing = new GroundFraming();
+  framing.snap(view);
+  const close = view.camera.size;
+  new IslandFraming().snap(view);
+  const whole = view.camera.size;
+  assert(close > whole * 1.8, 'starts zoomed in');
+  for (const t of g.island.tiles) if (t.block) t.hp = 0;
+  g.territory.grow();
+  framing.snap(view);
+  near(view.camera.size, whole, 1e-6, 'ends on the whole island');
+  framing.update(view, 1 / 60);
+  assert(Number.isFinite(view.camera.ox));
+});
+
+test('the income meter measures coins per minute', () => {
+  const m = new RateMeter(60);
+  for (let t = 0; t <= 120; t++) m.sample(t, t * 2);
+  near(m.perMinute(), 120, 1e-6);
+  m.sample(121, 0);   // a reset total starts over
+  assert.strictEqual(m.perMinute(), null, 'nothing to show until there is enough to measure');
 });
 
 // ---------------------------------------------------------------- pacing

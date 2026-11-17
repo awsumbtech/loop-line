@@ -3,14 +3,13 @@ import { mod } from '../core/math.js';
 // The loop of rail around the cleared ground. Positions along it are measured
 // in tiles from a starting point, running clockwise.
 //
-// Each piece of rail sits beside one tile outside the ground; that tile's spot
-// is where carts reach it.
+// Each tile just outside the ground has a spot on the track where carts reach it.
 export class Track {
-  // points: corners of the loop in tile coordinates; outside: for each piece
-  // from points[i] to points[i + 1], the index of the tile beside it (or -1).
-  constructor(points, outside, valid = true) {
+  // points: the loop as a closed polyline in tile coordinates.
+  constructor(points, valid = true) {
     this.points = points;
     this.valid = valid;
+    this.spots = [];
     this.lengths = [];
     this.starts = [];
     let total = 0;
@@ -22,15 +21,17 @@ export class Track {
       total += len;
     }
     this.length = total;
-    this.spots = [];
-    outside.forEach((tile, i) => {
-      if (tile >= 0) this.spots.push({ s: this.starts[i] + this.lengths[i] / 2, tile });
-    });
   }
 
-  // Traces the edge of the ground clockwise, then pulls the rail a little
-  // inside it so it does not run over the blocks.
-  static fromTerritory(territory, inset) {
+  // spots: [{ s, tile }] where s is a position along the track.
+  setSpots(spots) {
+    this.spots = spots;
+    return this;
+  }
+
+  // Traces the edge of the ground clockwise, pulls the rail a little inside it
+  // so it does not run over the blocks, and rounds every corner.
+  static fromTerritory(territory, inset, cornerRadius = 0.45) {
     const island = territory.island;
     const edges = new Map();
     let first = null, clash = false;
@@ -56,15 +57,46 @@ export class Track {
     } while (edge && edge !== first && loop.length <= edges.size);
     const valid = !clash && edge === first && loop.length === edges.size;
 
-    // Each corner moves inward, away from the pieces on either side of it.
+    // Each corner of the ground's edge moves inward, away from the pieces on either side.
     const n = loop.length;
-    const points = loop.map((cur, i) => {
+    const raw = loop.map((cur, i) => {
       const prev = loop[(i - 1 + n) % n];
-      let ox = -prev.dy, oy = prev.dx;   // inward side of the piece before
+      let ox = -prev.dy, oy = prev.dx;
       if (prev.dx !== cur.dx || prev.dy !== cur.dy) { ox += -cur.dy; oy += cur.dx; }
       return { x: cur.fx + inset * ox, y: cur.fy + inset * oy };
     });
-    return new Track(points, loop.map(e => e.outside), valid);
+
+    // Keep only the turns, then round each one with a curve.
+    const turns = [];
+    loop.forEach((cur, i) => {
+      const prev = loop[(i - 1 + n) % n];
+      if (prev.dx !== cur.dx || prev.dy !== cur.dy) turns.push({ p: raw[i], din: prev, dout: cur });
+    });
+    const points = [];
+    const m = turns.length;
+    const steps = 6;
+    turns.forEach((t, j) => {
+      const before = turns[(j - 1 + m) % m].p, after = turns[(j + 1) % m].p;
+      const r = Math.min(cornerRadius,
+        Math.hypot(t.p.x - before.x, t.p.y - before.y) / 2,
+        Math.hypot(after.x - t.p.x, after.y - t.p.y) / 2);
+      const a = { x: t.p.x - t.din.dx * r, y: t.p.y - t.din.dy * r };
+      const b = { x: t.p.x + t.dout.dx * r, y: t.p.y + t.dout.dy * r };
+      for (let k = 0; k <= steps; k++) {
+        const u = k / steps, v = 1 - u;
+        points.push({ x: v * v * a.x + 2 * v * u * t.p.x + u * u * b.x, y: v * v * a.y + 2 * v * u * t.p.y + u * u * b.y });
+      }
+    });
+
+    const track = new Track(points, valid);
+    // Each tile beside the ground is reached where the track passes the middle of its side.
+    const spots = [];
+    loop.forEach((e, i) => {
+      if (e.outside < 0) return;
+      const a = raw[i], b = raw[(i + 1) % n];
+      spots.push({ s: track.nearestS({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }), tile: e.outside });
+    });
+    return track.setSpots(spots);
   }
 
   segmentAt(s) {

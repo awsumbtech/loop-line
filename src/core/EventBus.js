@@ -5,9 +5,16 @@
 // Events the game sends:
 //   block:hit      { tile }                    a block took damage
 //   block:broken   { tile, block, value }      a block was destroyed
+//   ground:grew    { tiles }                   tiles joined the cleared ground
 //   track:changed  { track }                   the track was rebuilt
 //   island:started { number }                  a new island began
+//   island:cleared { number }                  the last block on the island broke
+//   ring:cleared   { ring, rings, next }       every block in a ring is gone; next names the next ring's blocks
+//   cart:bought    { level }                   a cart was bought
+//   cart:merged    { level }                   two carts became one of this level
+//   level:best     { level }                   a cart reached a new best level
 //   coins:changed  { coins }                   the wallet changed
+//   game:restored  {}                          a save was loaded
 export class EventBus {
   constructor() {
     this.handlers = new Map();

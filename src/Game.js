@@ -3,6 +3,7 @@ import { EventBus } from './core/EventBus.js';
 import { clamp, isNum } from './core/math.js';
 import { CartShop } from './economy/CartShop.js';
 import { Wallet } from './economy/Wallet.js';
+import { MilestoneSystem } from './systems/MilestoneSystem.js';
 import { MiningSystem } from './systems/MiningSystem.js';
 import { RewardSystem } from './systems/RewardSystem.js';
 import { TerritorySystem } from './systems/TerritorySystem.js';
@@ -13,7 +14,7 @@ import { IslandGenerator } from './world/IslandGenerator.js';
 import { Territory } from './world/Territory.js';
 import { Track } from './world/Track.js';
 
-export const defaultSystems = () => [new TrainSystem(), new MiningSystem(), new RewardSystem(), new TerritorySystem()];
+export const defaultSystems = () => [new TrainSystem(), new MiningSystem(), new RewardSystem(), new TerritorySystem(), new MilestoneSystem()];
 
 // Holds the game's state and runs its systems. Every piece is passed in or
 // built from config, so any of them can be replaced:
@@ -86,8 +87,8 @@ export class Game {
   // Redraws the track around the ground, keeping the train where it was.
   rebuildTrack() {
     const where = this.track ? this.track.pointAt(this.train.pos) : null;
-    this.track = Track.fromTerritory(this.territory, this.config.track.inset);
-    this.train.pos = where ? this.track.nearestS(where) : 0;
+    this.track = Track.fromTerritory(this.territory, this.config.track.inset, this.config.track.cornerRadius);
+    this.train.placeAt(where ? this.track.nearestS(where) : 0);
     this.bus.emit('track:changed', { track: this.track });
   }
 
@@ -119,9 +120,19 @@ export class Game {
   }
 
   canBuyCart() { return this.shop.canBuy(this.train, this.track, this.wallet); }
-  buyCart() { return this.shop.buy(this.train, this.track, this.wallet); }
   canMerge() { return this.train.mergeLevel() > 0; }
-  merge() { return this.train.merge(); }
+
+  buyCart() {
+    const level = this.shop.buy(this.train, this.track, this.wallet);
+    if (level) this.bus.emit('cart:bought', { level });
+    return level;
+  }
+
+  merge() {
+    const level = this.train.merge();
+    if (level) this.bus.emit('cart:merged', { level });
+    return level;
+  }
 
   // ---------------------------------------------------------------- saving
   // A part is { save(): data, load(data) }. Parts load in the order added;
@@ -148,7 +159,7 @@ export class Game {
       load: data => {
         const territory = Territory.fromJSON(this.island, data);
         if (!territory) return;
-        const track = Track.fromTerritory(territory, this.config.track.inset);
+        const track = Track.fromTerritory(territory, this.config.track.inset, this.config.track.cornerRadius);
         if (!track.valid) return;
         this.territory = territory;
         this.track = track;
@@ -176,5 +187,6 @@ export class Game {
       if (!(key in data)) continue;
       try { part.load(data[key]); } catch (e) { /* keep this part's fresh state */ }
     }
+    this.bus.emit('game:restored', {});
   }
 }

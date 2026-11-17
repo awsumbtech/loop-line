@@ -9,6 +9,7 @@ export class Territory {
     this.island = island;
     this.claimed = new Uint8Array(island.width * island.height);
     for (const i of indices) this.claimed[i] = 1;
+    this.lastClaimed = [];   // tiles that joined in the last grow()
   }
 
   // A square of ground around the station.
@@ -51,16 +52,17 @@ export class Territory {
     this.claimed[this.island.index(x, y)] = 1;
   }
 
-  // Claims every tile that can join, repeating until nothing changes. Returns true if anything joined.
+  // Claims every tile that can join, repeating until nothing changes.
+  // Returns true if anything joined; the tiles are in lastClaimed.
   grow() {
-    let grew = false;
+    this.lastClaimed = [];
     for (let again = true; again;) {
       again = false;
       for (const tile of this.island.tiles) {
-        if (this.canClaim(tile.x, tile.y)) { this.claim(tile.x, tile.y); again = grew = true; }
+        if (this.canClaim(tile.x, tile.y)) { this.claim(tile.x, tile.y); this.lastClaimed.push(tile); again = true; }
       }
     }
-    return grew;
+    return this.lastClaimed.length > 0;
   }
 
   // Would claiming (x, y) leave two claimed tiles touching only at a corner?
