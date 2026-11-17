@@ -44,8 +44,10 @@ Common changes:
 
 | To | Do this |
 | --- | --- |
+| Make islands longer or shorter | Change `islands.length` in `src/config.js` (0.8 is about 12 to 15 minutes; 2 is roughly twice as long) |
 | Tune speed, prices, island size | Edit `src/config.js` |
-| Add a block type | Add a row to `BLOCK_TYPES` in `config.js`, and a style in `view/styles.js` (optional: unstyled blocks use a fallback look) |
+| Change what grows where | Edit `RINGS` in `src/config.js`: one weighted mix per ring, ring 1 next to the start |
+| Add a block type | Add a row to `BLOCK_TYPES`, put its id in one or more `RINGS` mixes, and optionally a style in `view/styles.js` (unstyled blocks use a fallback look) |
 | Add game behaviour | Write a system with `update(dt, game)` and pass it to `game.addSystem()` |
 | Turn behaviour off | `game.removeSystem('mining')`, for example |
 | Change how islands are laid out | Subclass or replace `IslandGenerator` and pass it to `new Game({ generator })` |

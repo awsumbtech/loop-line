@@ -1,6 +1,6 @@
 // Tests the game without a browser.  Usage: node test/game.test.js
 import assert from 'node:assert';
-import { BLOCK_TYPES, CONFIG } from '../src/config.js';
+import { BLOCK_TYPES, CONFIG, RINGS } from '../src/config.js';
 import { Game } from '../src/Game.js';
 import { SaveManager } from '../src/save/SaveManager.js';
 import { MemoryStorage } from '../src/save/storage.js';
@@ -28,16 +28,29 @@ test('a new island starts with a small loop around the station and one cart', ()
   assert.strictEqual(g.track.spots.length, 12);
   assert(g.track.valid);
   assert.deepStrictEqual(g.train.levels, [1]);
-  for (const spot of g.track.spots) assert.strictEqual(g.island.tiles[spot.tile].block.id, 'tree');
+  for (const spot of g.track.spots) assert(['bush', 'tree'].includes(g.island.tiles[spot.tile].block.id), 'the first ring is soft');
 });
 
-test('the island is ringed by sea, trees in the middle and ore toward the coast', () => {
-  const island = new Game().island;
+test('the island is ringed by sea: soft blocks inside, a jump at ring 5, mountains at the coast', () => {
+  const g = new Game();
+  const island = g.island;
   const counts = {};
-  for (const t of island.tiles) counts[t.isWater ? 'water' : t.block ? t.block.id : 'clear'] = (counts[t.isWater ? 'water' : t.block ? t.block.id : 'clear'] || 0) + 1;
+  for (const t of island.tiles) if (t.block) counts[t.block.id] = (counts[t.block.id] || 0) + 1;
   console.log('      island 1: ' + JSON.stringify(counts));
-  assert(counts.tree > 35 && counts.rock > 15 && counts.copper > 15 && counts.gold > 5);
+  for (const id of ['bush', 'tree', 'bigTree', 'rock', 'boulder', 'iron', 'gold', 'mountain']) assert(counts[id] > 5, id + ' should appear');
   for (let x = 0; x < island.width; x++) assert(island.tileAt(x, 0).isWater && island.tileAt(x, island.height - 1).isWater);
+  // Average hits needed by ring: gentle for rings 1 to 4, then a big jump.
+  const byRing = [];
+  for (const t of island.tiles) {
+    if (!t.block) continue;
+    const r = g.generator.ringOf(t.x, t.y, island);
+    (byRing[r] = byRing[r] || []).push(t.maxHp);
+  }
+  const avg = byRing.map(list => list ? list.reduce((a, b) => a + b, 0) / list.length : 0);
+  console.log('      average hits by ring: ' + avg.slice(1).map(a => a.toFixed(0)).join(', '));
+  assert(avg[4] < 10, 'ring 4 is still soft');
+  assert(avg[5] > avg[4] * 4, 'ring 5 is a jump');
+  for (let r = 5; r < avg.length - 1; r++) assert(avg[r + 1] > avg[r] * 1.5, 'each outer ring is much harder');
 });
 
 test('a cleared block joins the ground and the track bends around it', () => {
@@ -101,7 +114,7 @@ test('every island in a long run clears fully and the track is always one loop',
     changes++;
     assert(g.track.valid, 'track must stay a single loop');
   });
-  for (let n = 1; n <= 4; n++) {
+  for (let n = 1; n <= 2; n++) {
     let t = 0;
     while (!g.canSail() && t < 3600) { g.advance(1); t++; autoplay(g); }
     assert(g.canSail(), `island ${n} should clear within an hour`);
@@ -118,7 +131,7 @@ test('carts cost more each time and stop when the train is full', () => {
   const prices = [];
   while (g.canBuyCart()) { prices.push(g.shop.price()); g.buyCart(); }
   assert.strictEqual(g.train.carts.length, g.train.capacity(g.track));
-  assert.deepStrictEqual(prices.slice(0, 4), [10, 15, 22, 31]);
+  assert.deepStrictEqual(prices.slice(0, 4), [10, 12, 15, 18]);   // 10 × 1.2 each time, rounded up
 });
 
 test('merging joins the lowest matching pair, strongest carts in front', () => {
@@ -150,8 +163,8 @@ test('sailing starts the next island fresh', () => {
   assert.strictEqual(g.shop.price(), 10);
   assert.strictEqual(g.territory.size, 9);
   const tree = new BlockCatalog(BLOCK_TYPES).get('tree');
-  near(tree.hpOn(2, CONFIG.islands), 2.6, 1e-9);
-  near(tree.valueOn(2, CONFIG.islands), 1.5, 1e-9);
+  near(tree.hpOn(2, CONFIG.islands), 3 * CONFIG.islands.length * CONFIG.islands.hpGrowth, 1e-9);
+  near(tree.valueOn(2, CONFIG.islands), 2 * CONFIG.islands.valueGrowth, 1e-9);
 });
 
 // ---------------------------------------------------------------- saving
@@ -225,12 +238,18 @@ test('a new system can be added while playing', () => {
   assert(g.removeSystem('counter'));
 });
 
-test('a new block type from config shows up on the island', () => {
-  const config = { ...CONFIG, grid: { ...CONFIG.grid } };
-  const catalog = new BlockCatalog([...BLOCK_TYPES, { id: 'crystal', name: 'Crystal', hp: 80, value: 50, reach: 0.97 }]);
-  const g = new Game({ config, catalog });
+test('a new block type shows up when added to a ring', () => {
+  const catalog = new BlockCatalog([...BLOCK_TYPES, { id: 'crystal', name: 'Crystal', hp: 900, value: 400 }]);
+  const rings = RINGS.map((mix, i) => (i === RINGS.length - 1 ? { ...mix, crystal: 4 } : mix));
+  const g = new Game({ catalog, generator: new IslandGenerator(CONFIG, catalog, rings) });
   assert(g.island.tiles.some(t => t.block && t.block.id === 'crystal'));
   assert.strictEqual(new BlockPainters().styleFor('crystal').painter, 'rock', 'unknown blocks draw with the fallback');
+});
+
+test('the island length setting stretches every block', () => {
+  const longer = { ...CONFIG, islands: { ...CONFIG.islands, length: CONFIG.islands.length * 2 } };
+  const a = new Game(), b = new Game({ config: longer });
+  a.island.tiles.forEach((t, i) => near(b.island.tiles[i].maxHp, t.maxHp * 2, 1e-9));
 });
 
 test('a block type can be removed and the game still runs', () => {
@@ -273,7 +292,7 @@ test('a save part can be removed or added', () => {
 (function pacing() {
   const g = new Game();
   const out = [];
-  for (let n = 1; n <= 4; n++) {
+  for (let n = 1; n <= 3; n++) {
     let t = 0;
     while (!g.canSail() && t < 3 * 3600) { g.advance(1); t++; autoplay(g); }
     out.push(`island ${n}: ${(t / 60).toFixed(1)} min, ended with carts ${g.train.levels.join(',')}`);

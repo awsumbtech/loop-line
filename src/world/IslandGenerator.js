@@ -1,23 +1,39 @@
+import { RINGS } from '../config.js';
 import { seededRandom } from '../core/math.js';
 import { Island } from './Island.js';
 import { Tile } from './Tile.js';
 
 // Lays out island number n. The same number always gives the same island.
-// Swap in another generator to make different kinds of islands.
+// Blocks are picked ring by ring from the ring mixes. Swap in another
+// generator to make different kinds of islands.
 export class IslandGenerator {
-  constructor(config, catalog) {
+  constructor(config, catalog, rings = RINGS) {
     this.config = config;
     this.catalog = catalog;
+    this.rings = rings;
+  }
+
+  // Ring 1 touches the starting ground. Rings are stretched to the island's
+  // shape so the coast is the same ring all the way round.
+  ringOf(x, y, island) {
+    const { x: cx, y: cy } = island.center;
+    const ax = cx - 1, ay = cy - 1;
+    const dx = Math.abs(x - cx), dy = Math.abs(y - cy);
+    return Math.max(dx, Math.round(dy * ax / ay)) - this.config.start.claimRadius;
+  }
+
+  mixFor(ring) {
+    if (!this.rings.length) return {};
+    return this.rings[Math.max(0, Math.min(this.rings.length - 1, ring - 1))];
   }
 
   generate(number) {
-    const { width: W, height: H, coastWaterChance, roughness, scatter } = this.config.grid;
+    const { width: W, height: H, coastWaterChance, ringJitter } = this.config.grid;
     const radius = this.config.start.claimRadius;
     const rules = this.config.islands;
     const random = seededRandom(number * 7919 + 13);
-    const cx = Math.floor((W - 1) / 2), cy = Math.floor((H - 1) / 2);
-    const first = this.catalog.innermost();
-    const scatterType = scatter ? this.catalog.get(scatter.block) : null;
+    const center = { x: Math.floor((W - 1) / 2), y: Math.floor((H - 1) / 2) };
+    const shape = { center };
     const tiles = [];
 
     for (let y = 0; y < H; y++) {
@@ -28,18 +44,16 @@ export class IslandGenerator {
         const water = edge === 0 || (edge === 1 && (ringCorner || random() < coastWaterChance));
         if (water) { tiles.push(new Tile(x, y, 'water')); continue; }
 
-        const dx = Math.abs(x - cx), dy = Math.abs(y - cy);
-        let block;
-        if (dx <= radius && dy <= radius) block = null;                 // the starting ground is clear
-        else if (dx <= radius + 1 && dy <= radius + 1) block = first;   // the first ring is the easiest block
-        else {
-          const distance = Math.max(dx / (cx - 1), dy / (cy - 1));
-          block = this.catalog.forReach(distance + (random() - 0.5) * roughness);
-          if (scatterType && block !== scatterType && random() < scatter.chance) block = scatterType;
+        const dx = Math.abs(x - center.x), dy = Math.abs(y - center.y);
+        let block = null;
+        if (dx > radius || dy > radius) {               // the starting ground is clear
+          let ring = this.ringOf(x, y, shape);
+          if (ring > 1 && random() < ringJitter) ring += random() < 0.5 ? -1 : 1;
+          block = this.catalog.pick(this.mixFor(ring), random);
         }
         tiles.push(new Tile(x, y, 'land', block, block ? block.hpOn(number, rules) : 0));
       }
     }
-    return new Island(number, W, H, tiles, { x: cx, y: cy });
+    return new Island(number, W, H, tiles, center);
   }
 }

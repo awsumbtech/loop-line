@@ -11,13 +11,20 @@ export const COLORS = {
   coinText: '#ffd970', textOutline: 'rgba(20, 28, 24, 0.85)', smoke: '240, 238, 228',
 };
 
-// painter: which drawing routine to use. The rest are its colours.
+const LEAVES = [['#3f6b34', '#5c8c44'], ['#3a6638', '#55874a'], ['#476f2f', '#6a963f']];
+
+// painter: which drawing routine to use (see BlockPainters). size: how much of
+// the tile it fills. The rest are its colours.
 export const BLOCK_STYLES = {
-  tree:   { painter: 'tree', leaves: [['#3f6b34', '#5c8c44'], ['#3a6638', '#55874a'], ['#476f2f', '#6a963f']], chip: '#5c8c44' },
-  rock:   { painter: 'rock', base: '#6f6e68', light: '#9a998f', fleck: null, chip: '#9a998f' },
-  copper: { painter: 'rock', base: '#5c4a40', light: '#7a6458', fleck: '#d5793f', chip: '#d5793f' },
-  gold:   { painter: 'rock', base: '#6e6347', light: '#8f8160', fleck: '#f6cf4d', chip: '#f6cf4d' },
-  fallback: { painter: 'rock', base: '#6a6a72', light: '#8e8e98', fleck: '#ffffff', chip: '#cccccc' },
+  bush:     { painter: 'bush', size: 0.7, leaves: [['#5e9a45', '#7db85a'], ['#57923f', '#76b152']], berry: '#d0503c', chip: '#7db85a' },
+  tree:     { painter: 'tree', size: 0.85, leaves: LEAVES, chip: '#5c8c44' },
+  bigTree:  { painter: 'tree', size: 1.12, leaves: [['#2f5a2b', '#477a3a'], ['#2c552f', '#437840']], chip: '#477a3a' },
+  rock:     { painter: 'rock', size: 0.85, base: '#6f6e68', light: '#9a998f', fleck: null, chip: '#9a998f' },
+  boulder:  { painter: 'rock', size: 1.12, base: '#57564f', light: '#7d7b72', fleck: null, chip: '#7d7b72' },
+  iron:     { painter: 'rock', size: 1.0, base: '#5c4a40', light: '#7a6458', fleck: '#d5793f', chip: '#d5793f' },
+  gold:     { painter: 'rock', size: 1.0, base: '#6e6347', light: '#8f8160', fleck: '#f6cf4d', chip: '#f6cf4d' },
+  mountain: { painter: 'mountain', size: 1.2, base: '#6b6a72', light: '#8d8c95', snow: '#eef1f4', chip: '#c9ccd2' },
+  fallback: { painter: 'rock', size: 1.0, base: '#6a6a72', light: '#8e8e98', fleck: '#ffffff', chip: '#cccccc' },
 };
 
 // Cart colours by level, repeating after the last.

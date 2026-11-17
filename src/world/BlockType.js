@@ -1,17 +1,16 @@
-// One kind of block, such as a tree or a gold rock.
+// One kind of block, such as a bush or a mountain.
 export class BlockType {
-  constructor({ id, name = id, hp, value, reach = 0 }) {
+  constructor({ id, name = id, hp, value }) {
     if (!id) throw new Error('A block type needs an id');
     this.id = id;
     this.name = name;
     this.hp = hp;
     this.value = value;
-    this.reach = reach;
   }
 
-  // Blocks get tougher and richer on later islands.
+  // rules.length stretches every island; later islands are tougher and richer.
   hpOn(islandNumber, rules) {
-    return this.hp * Math.pow(rules.hpGrowth, islandNumber - 1);
+    return this.hp * (rules.length || 1) * Math.pow(rules.hpGrowth, islandNumber - 1);
   }
 
   valueOn(islandNumber, rules) {

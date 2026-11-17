@@ -22,18 +22,20 @@ export class BlockCatalog {
   }
 
   all() {
-    return [...this.types.values()].sort((a, b) => a.reach - b.reach);
+    return [...this.types.values()];
   }
 
-  // The block nearest the middle of the island.
-  innermost() {
-    return this.all()[0] || null;
-  }
-
-  // The block that belongs at a distance from the middle (0 middle, 1 coast).
-  forReach(distance) {
-    let pick = null;
-    for (const type of this.all()) if (distance >= type.reach) pick = type;
-    return pick || this.innermost();
+  // Picks a block from weights like { bush: 3, tree: 1 }, using random() in [0, 1).
+  // Ids the catalog does not know are skipped, so removing a type never breaks a mix.
+  pick(weights, random) {
+    const options = Object.entries(weights || {}).filter(([id, w]) => w > 0 && this.types.has(id));
+    if (!options.length) return this.all()[0] || null;
+    const total = options.reduce((s, [, w]) => s + w, 0);
+    let roll = random() * total;
+    for (const [id, w] of options) {
+      roll -= w;
+      if (roll < 0) return this.types.get(id);
+    }
+    return this.types.get(options[options.length - 1][0]);
   }
 }
