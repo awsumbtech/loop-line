@@ -1,0 +1,285 @@
+// Tests the game without a browser.  Usage: node test/game.test.js
+import assert from 'node:assert';
+import { BLOCK_TYPES, CONFIG } from '../src/config.js';
+import { Game } from '../src/Game.js';
+import { SaveManager } from '../src/save/SaveManager.js';
+import { MemoryStorage } from '../src/save/storage.js';
+import { Train } from '../src/train/Train.js';
+import { BlockCatalog } from '../src/world/BlockCatalog.js';
+import { IslandGenerator } from '../src/world/IslandGenerator.js';
+import { Territory } from '../src/world/Territory.js';
+import { Track } from '../src/world/Track.js';
+import { BlockPainters } from '../src/view/BlockPainters.js';
+
+let passed = 0;
+function test(name, fn) { fn(); passed++; console.log('ok  - ' + name); }
+const near = (a, b, tol, msg) => assert(Math.abs(a - b) <= tol, `${msg || ''} expected ~${b}, got ${a}`);
+
+// Plays like a sensible player: buys when it can, merges when full.
+function autoplay(game) {
+  while (game.canBuyCart()) game.buyCart();
+  while (game.train.carts.length >= game.train.capacity(game.track) && game.canMerge()) game.merge();
+}
+
+// ---------------------------------------------------------------- world
+test('a new island starts with a small loop around the station and one cart', () => {
+  const g = new Game();
+  assert.strictEqual(g.territory.size, 9);
+  assert.strictEqual(g.track.spots.length, 12);
+  assert(g.track.valid);
+  assert.deepStrictEqual(g.train.levels, [1]);
+  for (const spot of g.track.spots) assert.strictEqual(g.island.tiles[spot.tile].block.id, 'tree');
+});
+
+test('the island is ringed by sea, trees in the middle and ore toward the coast', () => {
+  const island = new Game().island;
+  const counts = {};
+  for (const t of island.tiles) counts[t.isWater ? 'water' : t.block ? t.block.id : 'clear'] = (counts[t.isWater ? 'water' : t.block ? t.block.id : 'clear'] || 0) + 1;
+  console.log('      island 1: ' + JSON.stringify(counts));
+  assert(counts.tree > 35 && counts.rock > 15 && counts.copper > 15 && counts.gold > 5);
+  for (let x = 0; x < island.width; x++) assert(island.tileAt(x, 0).isWater && island.tileAt(x, island.height - 1).isWater);
+});
+
+test('a cleared block joins the ground and the track bends around it', () => {
+  const g = new Game();
+  const before = g.track.length;
+  const spot = g.track.spots[0];
+  const tile = g.island.tiles[spot.tile];
+  tile.hp = 0;
+  assert(g.territory.grow());
+  g.rebuildTrack();
+  assert(g.territory.has(tile.x, tile.y));
+  assert.strictEqual(g.territory.size, 10);
+  near(g.track.length, before + 2, 0.5, 'one tile adds about two tiles of track');
+  assert(g.track.valid);
+});
+
+test('ground never gets a hole or a corner-only join', () => {
+  const g = new Game();
+  // Clear a ring two tiles out but leave one block inside it.
+  const { x: cx, y: cy } = g.island.center;
+  for (let y = cy - 3; y <= cy + 3; y++) for (let x = cx - 3; x <= cx + 3; x++) {
+    if (x === cx + 2 && y === cy) continue;
+    const t = g.island.tileAt(x, y);
+    if (t.block) t.hp = 0;
+  }
+  g.territory.grow();
+  assert(!g.territory.has(cx + 2, cy), 'the block is still there');
+  assert(Track.fromTerritory(g.territory, 0.3).valid, 'the track is still a single loop');
+  g.island.tileAt(cx + 2, cy).hp = 0;
+  g.territory.grow();
+  assert(g.territory.has(cx + 2, cy));
+  assert(Track.fromTerritory(g.territory, 0.3).valid);
+});
+
+test('the train stays in place when the track grows', () => {
+  const g = new Game();
+  g.train.pos = 4.3;
+  const before = g.track.pointAt(g.train.pos);
+  g.island.tiles[g.track.spots[0].tile].hp = 0;
+  g.territory.grow();
+  g.rebuildTrack();
+  const after = g.track.pointAt(g.train.pos);
+  assert(Math.hypot(before.x - after.x, before.y - after.y) < 0.8);
+});
+
+test('each cart strikes each neighbouring block once per lap', () => {
+  const g = new Game();
+  g.removeSystem('territory');                 // keep the track still for this test
+  const hits = new Map();
+  const count = e => hits.set(e.tile, (hits.get(e.tile) || 0) + 1);
+  g.bus.on('block:hit', count); g.bus.on('block:broken', count);
+  g.advance(g.track.length / CONFIG.train.speed * 0.999);
+  assert.strictEqual(hits.size, 12);
+  for (const n of hits.values()) assert.strictEqual(n, 1);
+});
+
+test('every island in a long run clears fully and the track is always one loop', () => {
+  const g = new Game();
+  let changes = 0;
+  g.bus.on('track:changed', () => {
+    changes++;
+    assert(g.track.valid, 'track must stay a single loop');
+  });
+  for (let n = 1; n <= 4; n++) {
+    let t = 0;
+    while (!g.canSail() && t < 3600) { g.advance(1); t++; autoplay(g); }
+    assert(g.canSail(), `island ${n} should clear within an hour`);
+    assert(changes > 60, 'track should grow in many small steps');
+    changes = 0;
+    g.sail();
+  }
+});
+
+// ---------------------------------------------------------------- economy
+test('carts cost more each time and stop when the train is full', () => {
+  const g = new Game();
+  g.wallet.set(1e6);
+  const prices = [];
+  while (g.canBuyCart()) { prices.push(g.shop.price()); g.buyCart(); }
+  assert.strictEqual(g.train.carts.length, g.train.capacity(g.track));
+  assert.deepStrictEqual(prices.slice(0, 4), [10, 15, 22, 31]);
+});
+
+test('merging joins the lowest matching pair, strongest carts in front', () => {
+  const train = new Train(CONFIG, [3, 2, 1, 1, 2]);
+  assert.strictEqual(train.merge(), 2);
+  assert.deepStrictEqual(train.levels, [3, 2, 2, 2]);
+  assert.strictEqual(train.merge(), 3);
+  assert.strictEqual(train.merge(), 4);
+  assert.deepStrictEqual(train.levels, [4, 2]);
+  assert.strictEqual(train.merge(), 0);
+});
+
+test('breaking blocks pays into the wallet', () => {
+  const g = new Game();
+  g.train = new Train(CONFIG, [3]);
+  g.advance(g.track.length / CONFIG.train.speed * 0.999);
+  assert(g.wallet.coins >= 12, 'twelve trees at one coin each');
+});
+
+test('sailing starts the next island fresh', () => {
+  const g = new Game();
+  assert.strictEqual(g.sail(), false);
+  for (const t of g.island.tiles) t.hp = 0;
+  g.wallet.set(900); g.train = new Train(CONFIG, [4, 3]); g.shop.purchases = 5;
+  assert.strictEqual(g.sail(), true);
+  assert.strictEqual(g.island.number, 2);
+  assert.strictEqual(g.wallet.coins, 0);
+  assert.deepStrictEqual(g.train.levels, [1]);
+  assert.strictEqual(g.shop.price(), 10);
+  assert.strictEqual(g.territory.size, 9);
+  const tree = new BlockCatalog(BLOCK_TYPES).get('tree');
+  near(tree.hpOn(2, CONFIG.islands), 2.6, 1e-9);
+  near(tree.valueOn(2, CONFIG.islands), 1.5, 1e-9);
+});
+
+// ---------------------------------------------------------------- saving
+test('a save survives a round trip', () => {
+  const store = new MemoryStorage();
+  const saves = new SaveManager(store, CONFIG.save);
+  const a = new Game();
+  for (let i = 0; i < 90; i++) { a.advance(1); autoplay(a); }
+  saves.save(a, 1700000000000);
+  const b = new Game();
+  assert.strictEqual(saves.load(b), 1700000000000);
+  assert.deepStrictEqual(b.train.levels, a.train.levels);
+  assert.deepStrictEqual(b.territory.toJSON(), a.territory.toJSON());
+  near(b.wallet.coins, a.wallet.coins, 1e-9);
+  near(b.train.pos, a.train.pos, 1e-9);
+  assert.strictEqual(b.shop.purchases, a.shop.purchases);
+  a.island.tiles.forEach((t, i) => near(b.island.tiles[i].hp, t.hp, 1e-3));
+});
+
+test('bad, old or partly broken saves fall back safely', () => {
+  const store = new MemoryStorage();
+  const saves = new SaveManager(store, CONFIG.save);
+  const g = new Game();
+  store.write(CONFIG.save.key, 'not json');
+  assert.strictEqual(saves.load(g), 0);
+  store.write(CONFIG.save.key, JSON.stringify({ version: 3, parts: {} }));
+  assert.strictEqual(saves.load(g), 0);
+  store.write(CONFIG.save.key, JSON.stringify({ version: CONFIG.save.version, savedAt: 5, parts: {
+    island: { number: 1, hp: [1, 2] }, territory: [-4, 'x'], train: { levels: ['a'] }, wallet: { coins: -3 }, mystery: { a: 1 },
+  } }));
+  assert.strictEqual(saves.load(g), 5);
+  assert.strictEqual(g.territory.size, 9);
+  assert.deepStrictEqual(g.train.levels, [1]);
+  assert.strictEqual(g.wallet.coins, 0);
+  assert(g.track.valid);
+  store.write('loopline.island.v1', 'old');
+  saves.load(g);
+  assert.strictEqual(store.read('loopline.island.v1'), null, 'old saves are cleared');
+});
+
+// ---------------------------------------------------------------- swapping parts
+test('removing the mining system stops mining without breaking anything', () => {
+  const g = new Game();
+  g.removeSystem('mining');
+  g.advance(60);
+  assert.strictEqual(g.wallet.coins, 0);
+  assert(g.train.pos > 0);
+});
+
+test('removing the reward system breaks blocks but pays nothing', () => {
+  const g = new Game();
+  g.removeSystem('reward');
+  g.advance(60);
+  assert.strictEqual(g.wallet.coins, 0);
+  assert(g.island.clearedShare() > 0);
+});
+
+test('removing the territory system keeps the track fixed', () => {
+  const g = new Game();
+  g.removeSystem('territory');
+  g.advance(120);
+  assert.strictEqual(g.territory.size, 9);
+});
+
+test('a new system can be added while playing', () => {
+  const g = new Game();
+  let ticks = 0;
+  g.addSystem({ id: 'counter', update: () => { ticks++; } });
+  g.advance(1);
+  assert(ticks > 0);
+  assert(g.removeSystem('counter'));
+});
+
+test('a new block type from config shows up on the island', () => {
+  const config = { ...CONFIG, grid: { ...CONFIG.grid } };
+  const catalog = new BlockCatalog([...BLOCK_TYPES, { id: 'crystal', name: 'Crystal', hp: 80, value: 50, reach: 0.97 }]);
+  const g = new Game({ config, catalog });
+  assert(g.island.tiles.some(t => t.block && t.block.id === 'crystal'));
+  assert.strictEqual(new BlockPainters().styleFor('crystal').painter, 'rock', 'unknown blocks draw with the fallback');
+});
+
+test('a block type can be removed and the game still runs', () => {
+  const catalog = new BlockCatalog(BLOCK_TYPES);
+  catalog.remove('gold');
+  const g = new Game({ catalog });
+  assert(!g.island.tiles.some(t => t.block && t.block.id === 'gold'));
+  g.advance(30);
+  assert(g.wallet.coins > 0);
+});
+
+test('the island generator can be swapped', () => {
+  class AllTrees extends IslandGenerator {
+    generate(n) {
+      const island = super.generate(n);
+      const tree = this.catalog.get('tree');
+      for (const t of island.tiles) if (t.block) { t.block = tree; t.maxHp = t.hp = tree.hpOn(n, this.config.islands); }
+      return island;
+    }
+  }
+  const catalog = new BlockCatalog(BLOCK_TYPES);
+  const g = new Game({ catalog, generator: new AllTrees(CONFIG, catalog) });
+  assert(g.island.tiles.every(t => !t.block || t.block.id === 'tree'));
+});
+
+test('a save part can be removed or added', () => {
+  const store = new MemoryStorage();
+  const saves = new SaveManager(store, CONFIG.save);
+  const a = new Game();
+  a.removePart('stats');
+  a.addPart('note', { save: () => ({ text: 'hello' }), load: () => {} });
+  a.advance(30);
+  saves.save(a);
+  const b = new Game();
+  saves.load(b);
+  near(b.wallet.coins, a.wallet.coins, 1e-9);
+});
+
+// ---------------------------------------------------------------- pacing
+(function pacing() {
+  const g = new Game();
+  const out = [];
+  for (let n = 1; n <= 4; n++) {
+    let t = 0;
+    while (!g.canSail() && t < 3 * 3600) { g.advance(1); t++; autoplay(g); }
+    out.push(`island ${n}: ${(t / 60).toFixed(1)} min, ended with carts ${g.train.levels.join(',')}`);
+    g.sail();
+  }
+  console.log('pacing with ideal play:\n      ' + out.join('\n      '));
+})();
+
+console.log(`\n${passed} tests passed`);
