@@ -26,7 +26,12 @@ export const CONFIG = {
     hpGrowth: 1.15,          // each new island's blocks take this much more hitting...
     valueGrowth: 1.15,       // ...and pay this much more
   },
-  track: { inset: 0.3, cornerRadius: 0.45 },   // how far inside the cleared ground the track runs, and how round its bends are, in tiles
+  track: {
+    inset: 0.3,              // how far inside the cleared ground the track runs, in tiles
+    cornerRadius: 0.45,      // how round the bends are, in tiles
+    growBehindTrain: true,   // cleared tiles join only once the train has moved away from them
+    growClearance: 1.8,      // how far (in tiles) every car must be before a tile joins
+  },
   offline: { capSeconds: 3600 },
   save: { key: 'loopline.v5', version: 5, retiredKeys: ['loopline.save.v1', 'loopline.island.v1', 'loopline.v4'] },
 };

@@ -10,6 +10,7 @@ export class Territory {
     this.claimed = new Uint8Array(island.width * island.height);
     for (const i of indices) this.claimed[i] = 1;
     this.lastClaimed = [];   // tiles that joined in the last grow()
+    this.deferred = 0;       // tiles that could have joined but were held back in the last grow()
   }
 
   // A square of ground around the station.
@@ -54,12 +55,18 @@ export class Territory {
 
   // Claims every tile that can join, repeating until nothing changes.
   // Returns true if anything joined; the tiles are in lastClaimed.
-  grow() {
+  // allow(tile), if given, can hold a tile back for now (it is counted in deferred).
+  grow(allow = null) {
     this.lastClaimed = [];
     for (let again = true; again;) {
       again = false;
+      this.deferred = 0;
       for (const tile of this.island.tiles) {
-        if (this.canClaim(tile.x, tile.y)) { this.claim(tile.x, tile.y); this.lastClaimed.push(tile); again = true; }
+        if (!this.canClaim(tile.x, tile.y)) continue;
+        if (allow && !allow(tile)) { this.deferred++; continue; }
+        this.claim(tile.x, tile.y);
+        this.lastClaimed.push(tile);
+        again = true;
       }
     }
     return this.lastClaimed.length > 0;

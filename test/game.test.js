@@ -88,6 +88,38 @@ test('ground never gets a hole or a corner-only join', () => {
   assert(Track.fromTerritory(g.territory, 0.3).valid);
 });
 
+test('the track only changes once the train has moved away', () => {
+  const g = new Game();
+  const { growClearance } = CONFIG.track;
+  let checked = 0, tooClose = 0;
+  g.bus.on('ground:grew', e => {
+    for (const tile of e.tiles) {
+      checked++;
+      const cx = tile.x + 0.5, cy = tile.y + 0.5;
+      for (let i = -1; i < g.train.carts.length; i++) {
+        const p = g.track.pointAt(i < 0 ? g.train.pos : g.train.pos - g.train.offsetOf(i));
+        if (Math.hypot(p.x - cx, p.y - cy) < growClearance - 0.05) { tooClose++; break; }
+      }
+    }
+  });
+  for (let t = 0; t < 600; t++) { g.advance(1); autoplay(g); }
+  const forced = g.getSystem('territory').forced;
+  console.log(`      ${checked} tiles joined, ${tooClose} near the train, ${forced} after waiting a full lap`);
+  assert(checked > 100);
+  assert(tooClose <= forced, 'only tiles that waited a whole lap may join near the train');
+});
+
+test('with growBehindTrain off, cleared tiles join straight away', () => {
+  const config = { ...CONFIG, track: { ...CONFIG.track, growBehindTrain: false } };
+  const g = new Game({ config });
+  g.train = new Train(config, [3]);
+  let broken = 0;
+  g.bus.on('block:broken', () => broken++);
+  while (!broken) g.step(0.05);
+  g.step(0.05);
+  assert(g.territory.size > 9);
+});
+
 test('the train stays in place when the track grows', () => {
   const g = new Game();
   g.train.placeAt(4.3);
