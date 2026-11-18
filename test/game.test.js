@@ -159,6 +159,25 @@ test('every island in a long run clears fully and the track is always one loop',
   }
 });
 
+test('holding the island speeds the train up and letting go eases it back', () => {
+  const g = new Game();
+  g.removeSystem('territory');
+  const { max, rampPerSecond, decayPerSecond } = CONFIG.steam;
+  g.setBoosting(true);
+  g.advance(max / rampPerSecond + 0.05);
+  assert.strictEqual(g.train.steam, max, 'full speed after a short hold');
+  const before = g.train.travel;
+  g.advance(1);
+  near(g.train.travel - before, CONFIG.train.speed * (1 + max), 1e-6, 'moving at boosted speed');
+  g.setBoosting(true);   // still the same hold
+  assert.strictEqual(g.stats.holds, 1);
+  g.setBoosting(false);
+  g.advance(max / decayPerSecond + 0.05);
+  assert.strictEqual(g.train.steam, 0, 'back to normal after letting go');
+  g.setBoosting(true); g.setBoosting(false);
+  assert.strictEqual(g.stats.holds, 2);
+});
+
 // ---------------------------------------------------------------- economy
 test('carts cost more each time and stop when the train is full', () => {
   const g = new Game();
@@ -236,6 +255,9 @@ test('bad, old or partly broken saves fall back safely', () => {
   assert.deepStrictEqual(g.train.levels, [1]);
   assert.strictEqual(g.wallet.coins, 0);
   assert(g.track.valid);
+  store.write(CONFIG.save.key, JSON.stringify({ version: CONFIG.save.version, savedAt: 6, parts: { stats: { taps: 7 } } }));
+  saves.load(g);
+  assert.strictEqual(g.stats.holds, 7, 'older saves that counted taps still load');
   store.write('loopline.island.v1', 'old');
   saves.load(g);
   assert.strictEqual(store.read('loopline.island.v1'), null, 'old saves are cleared');

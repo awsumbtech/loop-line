@@ -77,6 +77,8 @@ body {
   background: var(--sea);
   border-top: 1px solid #0f1512; border-bottom: 1px solid #0f1512;
   cursor: pointer;
+  touch-action: none;              /* holding the island never scrolls or zooms the page */
+  -webkit-touch-callout: none;     /* no long-press menu on iPhone */
 }
 canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .chip {

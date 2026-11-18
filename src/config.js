@@ -18,7 +18,7 @@ export const CONFIG = {
     carLength: 0.9,          // track each car takes up, in tiles
     maxCarts: 8,
   },
-  steam: { perTap: 0.25, max: 1, decayPerSecond: 0.5 },
+  steam: { max: 1, rampPerSecond: 2.5, decayPerSecond: 1.5 },   // holding the island: up to double speed, reached in 0.4 s, gone 0.7 s after letting go
   carts: { powerGrowth: 2.2 },   // a level n cart hits for powerGrowth^(n-1), rounded
   shop: { baseCost: 15, costGrowth: 1.2, levelsBelowBest: 1 },
   islands: {

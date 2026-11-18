@@ -29,7 +29,7 @@ export class Game {
     this.bus = new EventBus();
     this.wallet = new Wallet(this.bus);
     this.shop = new CartShop(this.config.shop);
-    this.stats = { taps: 0 };
+    this.stats = { holds: 0 };   // times the player has held the island to speed up
     this.systems = [];
     this.parts = new Map();
     this.addDefaultParts();
@@ -80,7 +80,7 @@ export class Game {
   }
 
   reset() {
-    this.stats.taps = 0;
+    this.stats.holds = 0;
     this.startIsland(1);
   }
 
@@ -110,13 +110,15 @@ export class Game {
   catchUp(seconds) {
     if (!(seconds > 0)) return 0;
     this.train.steam = 0;
+    this.train.setBoosting(false);
     return this.advance(Math.min(seconds, this.config.offline.capSeconds));
   }
 
   // ---------------------------------------------------------------- actions
-  boost() {
-    this.train.boost();
-    this.stats.taps += 1;
+  // Holding the island speeds the train up; letting go eases it back.
+  setBoosting(on) {
+    if (on && !this.train.boosting) this.stats.holds += 1;
+    this.train.setBoosting(on);
   }
 
   canBuyCart() { return this.shop.canBuy(this.train, this.track, this.wallet); }
@@ -171,7 +173,10 @@ export class Game {
     this.addPart('shop', { save: () => this.shop.toJSON(), load: data => this.shop.restore(data) });
     this.addPart('stats', {
       save: () => ({ ...this.stats }),
-      load: data => { if (data && isNum(data.taps)) this.stats.taps = Math.max(0, Math.floor(data.taps)); },
+      load: data => {
+        const holds = data && (isNum(data.holds) ? data.holds : data.taps);   // older saves counted taps
+        if (isNum(holds)) this.stats.holds = Math.max(0, Math.floor(holds));
+      },
     });
   }
 

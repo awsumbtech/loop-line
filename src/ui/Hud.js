@@ -138,7 +138,7 @@ export class Hud {
 
     if (train.steam > 0.02) { this.show(el.steam, true); this.setText(el.steam, 'Speed ×' + (1 + train.steam).toFixed(2)); }
     else this.show(el.steam, false);
-    this.show(el.hint, game.stats.taps < 3 && el.toast.hidden);
+    this.show(el.hint, game.stats.holds < 2 && !train.boosting && el.toast.hidden);
   }
 
   renderSlots() {

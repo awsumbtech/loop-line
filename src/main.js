@@ -38,7 +38,7 @@ const hud = new Hud(document, game, {
   sail: () => { const ok = game.sail(); save(); return ok; },
   reset: () => { game.reset(); save(); },
 });
-new Input(map, game);
+const input = new Input(map, game);
 
 function fitToScreen() {
   const box = map.getBoundingClientRect();
@@ -70,6 +70,7 @@ function frame() {
   last = now;
   if (dt > 1) catchUp(dt);            // the page was asleep
   else if (dt > 0) game.advance(dt);
+  input.apply();
   renderer.render(Math.min(Math.max(dt, 0), 0.1));
   hud.update(Math.min(Math.max(dt, 0), 1));
   if (now - lastSave > 5000) { lastSave = now; save(); }

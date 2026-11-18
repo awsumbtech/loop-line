@@ -9,7 +9,8 @@ export class Train {
     this.carts = levels.map(level => new Cart(level));
     this.pos = 0;            // the engine's position on the track
     this.travel = 0;         // distance run since the track last changed; never wraps
-    this.steam = 0;          // extra speed from tapping, 0 to steam.max
+    this.steam = 0;          // extra speed while the player holds the island, 0 to steam.max
+    this.boosting = false;   // is the player holding the island right now?
     this.lastMove = { from: 0, to: 0 };
     this.sort();
   }
@@ -19,7 +20,10 @@ export class Train {
 
   move(dt, track) {
     const dist = this.speed * dt;
-    this.steam = Math.max(0, this.steam - this.config.steam.decayPerSecond * dt);
+    const s = this.config.steam;
+    this.steam = this.boosting
+      ? Math.min(s.max, this.steam + s.rampPerSecond * dt)
+      : Math.max(0, this.steam - s.decayPerSecond * dt);
     const from = this.travel;
     this.travel += dist;
     this.lastMove = { from, to: this.travel };
@@ -33,9 +37,9 @@ export class Train {
     this.lastMove = { from: s, to: s };
   }
 
-  boost() {
-    const s = this.config.steam;
-    this.steam = Math.min(s.max, this.steam + s.perTap);
+  // Speeds up while on, eases back to normal once off.
+  setBoosting(on) {
+    this.boosting = !!on;
   }
 
   // How far behind the engine cart i rides.
